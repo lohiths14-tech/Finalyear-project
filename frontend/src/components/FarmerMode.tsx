@@ -134,10 +134,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
     });
   }, []);
 
-  const handleScan = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, type: 'leaf' | 'field') => {
-    const originalFile = e.target.files?.[0];
-    if (!originalFile) return;
-
+  const processFile = useCallback(async (originalFile: File, type: 'leaf' | 'field') => {
     setScanning(true);
     setScanType(type);
 
@@ -174,6 +171,13 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
       setScanning(false);
     }
   }, [backendOnline, saveToQueue, resizeImage, addToast]);
+
+  const handleScan = useCallback(async (e: React.ChangeEvent<HTMLInputElement>, type: 'leaf' | 'field') => {
+    const originalFile = e.target.files?.[0];
+    if (!originalFile) return;
+    await processFile(originalFile, type);
+    e.target.value = '';
+  }, [processFile]);
 
   const dosageCalculations = useMemo<DosageCalcResult | null>(() => {
     if (!result) return null;
@@ -273,6 +277,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
                 offlineQueue={offlineQueue}
                 onSyncQueue={syncQueue}
                 onScan={handleScan}
+                onSelectSample={(file) => processFile(file, 'leaf')}
                 onNavigateHistory={() => setView('history')}
               />
             )}

@@ -9,6 +9,10 @@ import {
 } from 'lucide-react';
 import { analyzeField, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
+import SampleGallery from '../ui/SampleGallery';
+import EconomicImpactWidget from '../ui/EconomicImpactWidget';
+import ProgressionSimulator from '../ui/ProgressionSimulator';
+import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
 import type { FieldResult, GridCell, AiProviderStatus } from '../../types';
 
 // Inference stage labels shown during the 2-3 minute CPU run
@@ -101,6 +105,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   const [heatmapOpacity, setHeatmapOpacity] = useState(0.85);
   const [viewMode, setViewMode] = useState<'ai_overlay' | 'heatmap' | 'image'>('ai_overlay');
   const [dragOver, setDragOver] = useState(false);
+  const [isCertOpen, setIsCertOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Field Intelligence Decision Engine State ──
@@ -250,13 +255,22 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         </div>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         {localResults && (
-            <button 
-              className="btn-icon" 
-              onClick={handlePrintReport} 
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}
-            >
-              <Printer size={15} /> Export Report
-            </button>
+            <>
+              <button 
+                className="btn-icon" 
+                onClick={() => setIsCertOpen(true)} 
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+              >
+                <Award size={15} /> Certificate
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={handlePrintReport} 
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}
+              >
+                <Printer size={15} /> Export Report
+              </button>
+            </>
           )}
           <label 
             className={`btn-primary ${scanning || backendOnline === false ? 'btn-disabled' : ''}`} 
@@ -283,23 +297,26 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
       {scanning ? (
         <InferenceProgress imageUrl={imageUrl} />
       ) : !localResults ? (
-        <div
-          className={`empty-state ${dragOver ? 'drag-over' : ''}`}
-          style={{ cursor: 'pointer' }}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="empty-state-icon-wrapper">
-            <MapIcon size={32} color="var(--primary)" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div
+            className={`empty-state ${dragOver ? 'drag-over' : ''}`}
+            style={{ cursor: 'pointer' }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <div className="empty-state-icon-wrapper">
+              <MapIcon size={32} color="var(--primary)" />
+            </div>
+            <h3>No Field Scan Loaded</h3>
+            <p>Drop a field image here or click to upload.<br/>Supports drone images, satellite crops, and smartphone photos.</p>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              <Upload size={13} />
+              <span>JPG, PNG, WEBP · Max 20 MB</span>
+            </div>
           </div>
-          <h3>No Field Scan Loaded</h3>
-          <p>Drop a field image here or click to upload.<br/>Supports drone images, satellite crops, and smartphone photos.</p>
-          <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <Upload size={13} />
-            <span>JPG, PNG, WEBP · Max 20 MB</span>
-          </div>
+          <SampleGallery onSelectSample={processFile} disabled={scanning} />
         </div>
       ) : (
         <>
@@ -369,6 +386,19 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Economic ROI Impact & 14-Day Progression Simulator */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
+            <EconomicImpactWidget
+              diseaseType={localResults.disease_type}
+              severity={localResults.average_severity}
+              confidence={localResults.confidence}
+            />
+            <ProgressionSimulator
+              initialSeverity={localResults.average_severity}
+              diseaseType={localResults.disease_type}
+            />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
@@ -893,6 +923,13 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
           </motion.div>
         </>
       )}
+
+      {/* Clinical Pathology Certificate Modal */}
+      <ClinicalCertificateModal
+        isOpen={isCertOpen}
+        onClose={() => setIsCertOpen(false)}
+        scanResult={localResults}
+      />
     </div>
   );
 }

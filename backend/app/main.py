@@ -203,6 +203,48 @@ app.include_router(agronomy_router, prefix=PREFIX, tags=["Agronomy & Advisory"])
 app.include_router(model_registry_router, prefix=PREFIX, tags=["MLOps & Model Registry"])
 
 
+@app.get(f"{PREFIX}/samples", tags=["Benchmark Evaluation"])
+async def get_benchmark_samples():
+    """Returns metadata for the benchmark sample evaluation suite."""
+    return {
+        "benchmark_suite": "AgriPulse 2.0 Real-World Benchmark",
+        "samples": [
+            {
+                "id": "healthy",
+                "label": "Healthy Foliage",
+                "crop": "Oryza sativa / Paddy",
+                "condition": "Negative Control Baseline",
+                "expected_prediction": "Healthy",
+                "expected_action": "Routine monitoring only",
+            },
+            {
+                "id": "blast",
+                "label": "Rice Blast",
+                "crop": "Oryza sativa / Paddy",
+                "condition": "Magnaporthe oryzae (Foliar necrosis)",
+                "expected_prediction": "Rice Blast",
+                "icar_guidance": "Tricyclazole 75% WP @ 0.6 g/L every 14 days",
+            },
+            {
+                "id": "brown_spot",
+                "label": "Brown Spot",
+                "crop": "Oryza sativa / Paddy",
+                "condition": "Bipolaris oryzae (Fungal leaf spot)",
+                "expected_prediction": "Brown Spot",
+                "icar_guidance": "Propiconazole 25% EC @ 1 ml/L at boot-leaf stage",
+            },
+            {
+                "id": "ood_trap",
+                "label": "Non-Crop Mechanical Trap",
+                "crop": "None (Out-of-Distribution)",
+                "condition": "Non-foliar synthetic pattern",
+                "expected_prediction": "Withheld / Low Certainty",
+                "ood_behavior": "Triggers MSP & Energy-based entropy gate rejection",
+            },
+        ],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Core & Kubernetes Health Probes
 # ---------------------------------------------------------------------------

@@ -1,23 +1,29 @@
 # 🌾 AgriPulse 2.0: Multi-Modal Field-Level Crop Disease Intelligence Platform
 
+[![Vercel Live App](https://img.shields.io/badge/Vercel-Live_Web_App-black?logo=vercel)](https://finalyear-project-lohiths-projects-b447afea.vercel.app)
+[![Render Docker API](https://img.shields.io/badge/Render-Docker_Backend_Live-46E3B7?logo=render)](https://crop-disease-backend-p5ur.onrender.com)
+[![Swagger API Docs](https://img.shields.io/badge/FastAPI-Swagger_Docs_Live-009688?logo=fastapi)](https://crop-disease-backend-p5ur.onrender.com/api/v1/docs)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg)](https://fastapi.tiangolo.com)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C.svg)](https://pytorch.org/)
 [![React 18](https://img.shields.io/badge/React-18.3-61DAFB.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6.svg)](https://www.typescriptlang.org/)
-[![IEEE Draft](https://img.shields.io/badge/IEEE-Paper_Draft-107C41.svg)](./agripulse_v2_ieee_paper.pdf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 > **AgriPulse 2.0** is an enterprise- and research-grade agricultural intelligence system engineered to bridge the gap between laboratory leaf classifiers and real-world field pathology. By combining **Foundation Vision Models (DINOv2)**, **1D-CNN Spectral Modeling (NGVC)**, **Spatial Graph Transformers (GraphSAGE)**, and **Temporal Sequence Dynamics (BiLSTM)** with **Temperature-Calibrated Uncertainty** and **ICAR/IRRI-grounded Agronomic Guidance**, AgriPulse 2.0 delivers actionable crop diagnostics for both precision agronomists and smallholder farmers.
 
 ---
 
+## 🌐 Live Cloud Deployment (Dual-Cloud Architecture)
+
+- **Production Web Application (Vercel)**: [https://finalyear-project-lohiths-projects-b447afea.vercel.app](https://finalyear-project-lohiths-projects-b447afea.vercel.app)
+- **AI Inference Backend (Render Docker)**: [https://crop-disease-backend-p5ur.onrender.com](https://crop-disease-backend-p5ur.onrender.com)
+- **Interactive Swagger 3.0 API Docs**: [https://crop-disease-backend-p5ur.onrender.com/api/v1/docs](https://crop-disease-backend-p5ur.onrender.com/api/v1/docs)
+
+---
+
 ## 📑 Research Publication
 
-This repository contains the full LaTeX source and compiled camera-ready manuscript:
-
-- **Paper Title**: *AgriPulse: Foundation Vision Transformers with Graph-Temporal Cross-Attention for Reliable Field-Level Crop Disease Intelligence*
-- **Authors**: Brunda R Gowda, Krupanka R Paled, Rithesh Balaji C M, Lohith S, Mr. Sandeep Telkar R, Likewin Thomas
+- **Authors**: Brunda R Gowda, Krupanka R Paled, Rithesh Balaji C M, Lohith S, Mr. Sandeep Telkar R
 - **Affiliation**: Department of Artificial Intelligence and Machine Learning, PES Institute of Technology and Management, Shivamogga, India
 - **Manuscript Files**: [LaTeX Source (`agripulse_v2_ieee_paper.tex`)](./agripulse_v2_ieee_paper.tex) · [Compiled PDF (`agripulse_v2_ieee_paper.pdf`)](./agripulse_v2_ieee_paper.pdf)
 

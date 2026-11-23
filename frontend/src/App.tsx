@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Leaf, Sprout, ArrowLeftRight, Sparkles, Moon, Sun, Menu } from 'lucide-react';
+import { Leaf, Sprout, ArrowLeftRight, Sparkles, Moon, Sun, Menu, Smartphone } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import ToastContainer from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -10,6 +10,8 @@ import LeafScanTab from './components/tabs/LeafScanTab';
 import SpectralTab from './components/tabs/SpectralTab';
 import HistoryTab from './components/tabs/HistoryTab';
 import FarmerMode from './components/FarmerMode';
+import QrCodeModal from './components/ui/QrCodeModal';
+import HealthSentinel from './components/ui/HealthSentinel';
 import { useAuth } from './context/AuthContext';
 import apiClient from './services/api';
 import type { FieldResult, LeafResult } from './types';
@@ -144,6 +146,7 @@ function App() {
   const [isFarmerMode, setIsFarmerMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('agripulse-theme');
     return saved === 'dark';
@@ -235,7 +238,8 @@ function App() {
           onLogin={() => { login(apiKeyInput.trim() || '__no_auth__'); }}
           onGuest={() => { login('__no_auth__'); }}
         />
-        <ToastContainer toasts={toasts} removeToast={removeToast} />
+        <QrCodeModal isOpen={qrOpen} onClose={() => setQrOpen(false)} />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       </ErrorBoundary>
     );
   }
@@ -266,14 +270,26 @@ function App() {
                 </div>
               </div>
 
-              <button
-                id="mode-toggle-btn"
-                className="mode-toggle-btn active"
-                onClick={() => setIsFarmerMode(false)}
-              >
-                <ArrowLeftRight size={14} />
-                <span>Switch to Expert Mode</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <HealthSentinel onStatusChange={(online) => setBackendOnline(online)} />
+                <button
+                  onClick={() => setQrOpen(true)}
+                  className="mode-toggle-btn"
+                  style={{ padding: '6px 12px' }}
+                  title="Open on Mobile Phone"
+                >
+                  <Smartphone size={14} />
+                  <span>Mobile QR</span>
+                </button>
+                <button
+                  id="mode-toggle-btn"
+                  className="mode-toggle-btn active"
+                  onClick={() => setIsFarmerMode(false)}
+                >
+                  <ArrowLeftRight size={14} />
+                  <span>Switch to Expert Mode</span>
+                </button>
+              </div>
             </header>
 
             <FarmerMode addToast={addToast} backendOnline={backendOnline} />
@@ -308,10 +324,21 @@ function App() {
                 </div>
 
                 <div className="top-nav-right">
+                  <HealthSentinel onStatusChange={(online) => setBackendOnline(online)} />
+
                   <div className="ai-badge">
                     <Sparkles size={13} color="var(--primary)" />
                     <span>DINOv2 Engine</span>
                   </div>
+
+                  <button
+                    onClick={() => setQrOpen(true)}
+                    className="theme-toggle-btn"
+                    aria-label="Open on Mobile Phone"
+                    title="Open on Mobile Phone via QR"
+                  >
+                    <Smartphone size={16} />
+                  </button>
 
                   <button
                     className="theme-toggle-btn"
@@ -353,6 +380,7 @@ function App() {
         )}
       </AnimatePresence>
 
+      <QrCodeModal isOpen={qrOpen} onClose={() => setQrOpen(false)} />
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ErrorBoundary>
   );

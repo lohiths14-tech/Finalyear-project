@@ -1,9 +1,14 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, Sparkles, Printer } from 'lucide-react';
+import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, Sparkles, Printer, Camera, Award } from 'lucide-react';
 import SkeletonCard from '../ui/SkeletonCard';
 import apiClient from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
+import SampleGallery from '../ui/SampleGallery';
+import LiveCameraScanner from '../ui/LiveCameraScanner';
+import EconomicImpactWidget from '../ui/EconomicImpactWidget';
+import ProgressionSimulator from '../ui/ProgressionSimulator';
+import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
 import type { LeafResult } from '../../types';
 
 const severityColor = (s: number) => s > 70 ? 'var(--danger)' : s > 40 ? 'var(--warning)' : 'var(--success)';
@@ -43,6 +48,8 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
   const [preview, setPreview] = useState<string | null>(null);
   const [showAlt, setShowAlt] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [isCertOpen, setIsCertOpen] = useState(false);
 
   // AI Agronomist Consultation states
   const [consulting, setConsulting] = useState(false);
@@ -131,19 +138,40 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
     <div className="tab-viewport">
       <div className="main-grid">
         <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, background: 'var(--bg-card)', padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
             <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
               <FlaskConical size={20} color="var(--primary)" /> Leaf Micro-Diagnostic
             </h3>
-            {result && (
-              <button 
-                className="btn-icon" 
-                onClick={handlePrint} 
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setIsCameraOpen(true)}
+                disabled={scanning}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}
+                title="Open live camera scanner"
               >
-                <Printer size={14} /> Print Report
+                <Camera size={14} /> Live Camera
               </button>
-            )}
+              {result && (
+                <>
+                  <button 
+                    className="btn-icon" 
+                    onClick={() => setIsCertOpen(true)} 
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+                  >
+                    <Award size={14} /> Certificate
+                  </button>
+                  <button 
+                    className="btn-icon" 
+                    onClick={handlePrint} 
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}
+                  >
+                    <Printer size={14} /> Print
+                  </button>
+                </>
+              )}
+            </div>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', margin: 0 }}>
             Upload a clear, close-up leaf photograph for instant spectral pathogen profiling and ICAR agronomic guidance.
@@ -170,6 +198,9 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               aria-hidden="true"
             />
           </label>
+
+          {/* 1-Click Benchmark Samples */}
+          <SampleGallery onSelectSample={processFile} disabled={scanning} />
 
           {preview && (
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
@@ -400,6 +431,18 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                   </AnimatePresence>
                 </div>
               )}
+              {/* Economic ROI Impact & 14-Day Progression Simulator */}
+              <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <EconomicImpactWidget
+                  diseaseType={result.disease_type}
+                  severity={result.severity}
+                  confidence={result.confidence}
+                />
+                <ProgressionSimulator
+                  initialSeverity={result.severity}
+                  diseaseType={result.disease_type}
+                />
+              </div>
             </div>
           )}
 
@@ -410,12 +453,26 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               </div>
               <h3>Awaiting Leaf Scan</h3>
               <p>
-                Upload an image of a single crop leaf to view instant multi-spectral diagnostic breakdown and ICAR agronomy recommendations.
+                Upload an image or choose one of the benchmark samples on the left to view instant multi-spectral diagnostic breakdown and ICAR agronomy recommendations.
               </p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Live Camera Scanner Modal */}
+      <LiveCameraScanner
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={processFile}
+      />
+
+      {/* Clinical Pathology Certificate Modal */}
+      <ClinicalCertificateModal
+        isOpen={isCertOpen}
+        onClose={() => setIsCertOpen(false)}
+        scanResult={result}
+      />
     </div>
   );
 }
