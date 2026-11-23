@@ -19,6 +19,8 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://localhost:8000",
+        "https://finalyear-project.vercel.app",
+        "https://finalyear-project-bcxuut7q0-lohiths-projects-b447afea.vercel.app",
     ]
 
     # API Key authentication (leave empty to disable)
