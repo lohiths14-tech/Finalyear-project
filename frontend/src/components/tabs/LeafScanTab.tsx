@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, Sparkles, Printer } from 'lucide-react';
 import SkeletonCard from '../ui/SkeletonCard';
 import apiClient from '../../services/api';
+import { optimizeImageForUpload } from '../../utils/compress';
 import type { LeafResult } from '../../types';
 
 const severityColor = (s: number) => s > 70 ? 'var(--danger)' : s > 40 ? 'var(--warning)' : 'var(--success)';
@@ -80,11 +81,12 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
     setAgronomistAnswer(null);
     setActiveQuestion(null);
 
-    const fd = new FormData();
-    fd.append('file', file);
-
     try {
-      addToast(`Scanning "${file.name}"…`, 'info', 3000);
+      addToast(`Preparing & scanning "${file.name}"…`, 'info', 3000);
+      const optimizedFile = await optimizeImageForUpload(file, 1024);
+      const fd = new FormData();
+      fd.append('file', optimizedFile);
+
       const { data } = await apiClient.post<LeafResult>('/analyze/leaf', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 300000,

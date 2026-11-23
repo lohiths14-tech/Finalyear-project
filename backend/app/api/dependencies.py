@@ -21,8 +21,8 @@ def get_inference_service(request: Request):
     return request.app.state.inference_service
 
 
-# Maximum allowed image dimensions (prevents OOM on extremely large images)
-MAX_IMAGE_DIMENSION = 4096
+# Maximum allowed image dimensions (optimized for 512MB RAM cloud instances)
+MAX_IMAGE_DIMENSION = 1024
 
 
 def resize_if_needed(image):

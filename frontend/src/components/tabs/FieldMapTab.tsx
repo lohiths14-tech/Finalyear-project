@@ -8,6 +8,7 @@ import {
   Bot, Send, MessageSquare, ShieldCheck, Droplets, HelpCircle
 } from 'lucide-react';
 import { analyzeField, consultField, getAiStatus } from '../../services/api';
+import { optimizeImageForUpload } from '../../utils/compress';
 import type { FieldResult, GridCell, AiProviderStatus } from '../../types';
 
 // Inference stage labels shown during the 2-3 minute CPU run
@@ -175,10 +176,12 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
     const objectUrl = URL.createObjectURL(file);
     setImageUrl(objectUrl);
 
-    const fd = new FormData();
-    fd.append('file', file);
     try {
-      addToast('Field analysis started — DINOv2 + Adaptive Grid running…', 'info', 6000);
+      addToast('Preparing image & starting AI analysis…', 'info', 4000);
+      const optimizedFile = await optimizeImageForUpload(file, 1024);
+      const fd = new FormData();
+      fd.append('file', optimizedFile);
+
       const data = await analyzeField(fd);
       setLocalResults(data);
       if (data.grid_data?.length) setSelectedCell(data.grid_data[0]);
