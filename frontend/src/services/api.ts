@@ -6,7 +6,14 @@ export interface ApiError {
   detail?: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+const getBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api/v1';
+  const trimmed = envUrl.trim().replace(/\/+$/, '');
+  return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+};
+
+const API_BASE_URL = getBaseUrl();
 
 // Default timeout: 90s for leaf/health calls.
 // Field analysis on CPU can take 2-3 minutes — overridden per-request below.
@@ -67,7 +74,7 @@ export const analyzeField = async (formData: FormData): Promise<FieldResult> => 
     if (error.code === 'ECONNRESET' || error.message?.includes('ECONNRESET')) {
       console.warn('Proxy connection reset, trying direct backend connection...');
       const directClient = axios.create({
-        baseURL: 'http://localhost:8000/api/v1',
+        baseURL: API_BASE_URL,
         timeout: 300000,
       });
       
