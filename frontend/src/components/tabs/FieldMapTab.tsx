@@ -322,37 +322,33 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         <>
           {/* ── PHASE 6: DECISION ENGINE PANEL ── */}
           <div 
-            className="card" 
-            style={{ 
-              padding: 24, 
-              background: localResults.disease_type === 'Healthy' ? '#f0fdf4' : '#fffbeb',
-              border: `1px solid ${localResults.disease_type === 'Healthy' ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`
-            }}
+            className={`card ${localResults.disease_type === 'Healthy' ? 'decision-banner-healthy' : 'decision-banner-warning'}`}
+            style={{ padding: 26 }}
           >
             <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
               <div style={{ flex: '1 1 400px' }}>
                 <div style={{ 
-                  fontSize: '0.75rem', 
+                  fontSize: '0.74rem', 
                   color: localResults.disease_type === 'Healthy' ? 'var(--primary)' : 'var(--warning)', 
                   textTransform: 'uppercase', 
-                  letterSpacing: '0.06em', 
-                  marginBottom: 4, 
-                  fontWeight: 700,
+                  letterSpacing: '0.08em', 
+                  marginBottom: 6, 
+                  fontWeight: 800,
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6
                 }}>
                   <Sparkles size={14} /> AI Decision Engine Recommendation
                 </div>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.35rem', color: 'var(--text-primary)', fontWeight: 700 }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '-0.025em' }}>
                   {localResults.disease_type === 'Healthy' ? 'Field is Healthy' : `Action Required: ${localResults.disease_type}`}
                 </h3>
                 <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.6 }}>
                   {localResults.treatment}
                 </p>
                 {localResults.farmer_friendly && (
-                  <div style={{ marginTop: 14, background: 'var(--bg-card)', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <p style={{ color: 'var(--primary)', fontSize: '0.8rem', fontWeight: 700, margin: '0 0 4px 0', textTransform: 'uppercase' }}>Farmer Summary</p>
+                  <div className="decision-summary-box">
+                    <p style={{ color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 800, margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Farmer Summary</p>
                     <p style={{ fontSize: '0.86rem', color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                       <strong>What is it?</strong> {localResults.farmer_friendly.what_is_it}
                     </p>
@@ -363,24 +359,24 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 )}
               </div>
 
-              <div style={{ display: 'flex', gap: 20, background: 'var(--bg-card)', padding: '14px 20px', borderRadius: 12, border: '1px solid var(--border)', boxShadow: 'var(--shadow-xs)' }}>
+              <div className="decision-stat-card">
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Severity</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: localResults.average_severity > 50 ? 'var(--danger)' : localResults.average_severity > 20 ? 'var(--warning)' : 'var(--success)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Severity</div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: localResults.average_severity > 50 ? 'var(--danger)' : localResults.average_severity > 20 ? 'var(--warning)' : 'var(--success)' }}>
                     {localResults.average_severity > 50 ? 'Severe' : localResults.average_severity > 20 ? 'Moderate' : 'Low'}
                   </div>
                 </div>
-                <div style={{ width: 1, background: 'var(--border)' }} />
+                <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Infected Area</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Infected Area</div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                     {infectedPct.toFixed(1)}%
                   </div>
                 </div>
-                <div style={{ width: 1, background: 'var(--border)' }} />
+                <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
                 <div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Spread Risk</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: localResults.spread_risk === 'High' ? 'var(--danger)' : 'var(--success)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Spread Risk</div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: localResults.spread_risk === 'High' ? 'var(--danger)' : 'var(--success)' }}>
                     {localResults.spread_risk}
                   </div>
                 </div>

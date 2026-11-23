@@ -239,7 +239,7 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               </div>
 
               {result.ood?.is_ood && (
-                <div style={{ background: '#fef2f2', border: '1px solid var(--danger)', borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                <div className="ood-warning-box">
                   <p style={{ color: 'var(--danger)', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
                     <AlertTriangle size={16} /> Out of Distribution Detected
                   </p>
@@ -314,13 +314,7 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0 }}
-                      style={{
-                        background: '#f0fdf4',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
-                        borderRadius: 10,
-                        padding: 14,
-                        marginBottom: 14,
-                      }}
+                      className="advisory-box"
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <span style={{ fontSize: '1.1rem' }}>🧑‍🌾</span>
@@ -332,8 +326,8 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
 
                       {consulting ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0' }}>
-                          <div style={{ height: 10, background: '#dcfce7', borderRadius: 4, width: '90%' }} />
-                          <div style={{ height: 10, background: '#dcfce7', borderRadius: 4, width: '75%' }} />
+                          <div className="skeleton" style={{ height: 10, width: '90%', borderRadius: 4 }} />
+                          <div className="skeleton" style={{ height: 10, width: '75%', borderRadius: 4 }} />
                         </div>
                       ) : (
                         <div style={{
@@ -407,15 +401,16 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                             key={i}
                             style={{
                               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                              padding: '8px 10px',
-                              background: i === 0 ? '#ecfdf5' : 'var(--bg-subtle)',
-                              borderRadius: 6, marginBottom: 6, fontSize: '0.8rem',
+                              padding: '8px 12px',
+                              background: i === 0 ? 'var(--primary-glow)' : 'var(--bg-subtle)',
+                              border: i === 0 ? '1px solid rgba(16,185,129,0.25)' : '1px solid transparent',
+                              borderRadius: 8, marginBottom: 6, fontSize: '0.8rem',
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{
                                 width: 18, height: 18, borderRadius: '50%',
-                                background: i === 0 ? 'var(--primary)' : '#cbd5e1',
+                                background: i === 0 ? 'var(--primary)' : 'var(--border)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 fontSize: '0.65rem', fontWeight: 700, color: 'white', flexShrink: 0,
                               }}>{i + 1}</span>

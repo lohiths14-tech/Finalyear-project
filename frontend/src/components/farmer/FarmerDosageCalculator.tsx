@@ -94,11 +94,11 @@ export const FarmerDosageCalculator: React.FC<FarmerDosageCalculatorProps> = ({
       </div>
 
       {/* PPE Checklist */}
-      <div style={{ marginTop: 12, background: 'rgba(59, 130, 246, 0.08)', padding: 10, borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.78rem', fontWeight: 700, color: '#1d4ed8', marginBottom: 4 }}>
-          <ShieldAlert size={14} /> {t.safetyGear}
+      <div style={{ marginTop: 12, background: 'var(--accent-glow)', padding: 12, borderRadius: 10, border: '1px solid rgba(79, 70, 229, 0.25)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-light)', marginBottom: 4 }}>
+          <ShieldAlert size={15} /> {t.safetyGear}
         </div>
-        <div style={{ fontSize: '0.75rem', color: '#1e40af', lineHeight: 1.4 }}>
+        <div style={{ fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.5 }}>
           😷 Wear N95 Mask · 🧤 Rubber Gloves · 🥾 Boots · 🧼 Wash hands after spray
         </div>
       </div>

@@ -98,19 +98,6 @@ function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin, onGuest }: LoginScr
           <button
             type="button"
             className="btn-guest"
-            style={{
-              marginTop: '0.6rem',
-              width: '100%',
-              padding: '0.65rem 1rem',
-              borderRadius: '0.5rem',
-              border: '1px solid #cbd5e1',
-              backgroundColor: '#f8fafc',
-              color: '#475569',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
             onClick={onGuest}
           >
             Enter as Demo / Guest

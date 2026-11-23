@@ -29,30 +29,30 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
 }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="farmer-home">
-      <div style={{ background: '#ecfdf5', border: '1px solid rgba(16,185,129,0.3)', padding: '12px 16px', borderRadius: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ background: 'var(--primary-glow)', border: '1px solid rgba(16,185,129,0.3)', padding: '12px 16px', borderRadius: 14, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
         <Info size={20} color="var(--primary)" />
         <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
           {t.tip}
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, background: 'var(--bg-card)', padding: '12px 16px', borderRadius: 12, border: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, background: 'var(--bg-card)', padding: '12px 16px', borderRadius: 14, border: '1px solid var(--border)' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{t.welcome}</h2>
         <FarmerLanguageSelector lang={lang} onLanguageChange={onLanguageChange} />
       </div>
 
       <div style={{ display: 'grid', gap: 16 }}>
         {offlineQueue.length > 0 && (
-          <div className="action-card" onClick={onSyncQueue} style={{ background: '#eff6ff', borderColor: '#3b82f6', cursor: 'pointer' }}>
-            <Upload size={32} color="#3b82f6" />
+          <div className="action-card" onClick={onSyncQueue} style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent)', cursor: 'pointer' }}>
+            <Upload size={32} color="var(--accent)" />
             <div>
-              <div className="farmer-label" style={{ color: '#1e40af' }}>{t.syncScans} ({offlineQueue.length})</div>
+              <div className="farmer-label" style={{ color: 'var(--accent)' }}>{t.syncScans} ({offlineQueue.length})</div>
               <div className="farmer-sublabel">{t.syncScansSub}</div>
             </div>
           </div>
         )}
 
-        <label className="action-card" style={{ border: '2px solid var(--primary)', background: '#f0fdf4', cursor: 'pointer', padding: 22 }}>
+        <label className="action-card" style={{ border: '2px solid var(--primary)', background: 'var(--primary-glow)', cursor: 'pointer', padding: 22 }}>
           <Map size={44} color="var(--primary)" />
           <div>
             <div className="farmer-label" style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>{t.scanField}</div>

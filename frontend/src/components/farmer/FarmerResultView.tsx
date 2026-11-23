@@ -93,9 +93,9 @@ export const FarmerResultView: React.FC<FarmerResultViewProps> = ({
         </p>
 
         {isLowCertainty && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: 14, borderRadius: 10, marginBottom: 18, textAlign: 'left' }}>
-            <p style={{ fontWeight: 700, marginBottom: 6, color: '#b45309', fontSize: '0.85rem' }}>{t.lowCertaintyStepsTitle}</p>
-            <ul style={{ fontSize: '0.82rem', paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 4, margin: 0, color: '#78350f' }}>
+          <div style={{ background: 'var(--warning-glow)', border: '1px solid rgba(217, 119, 6, 0.35)', padding: 14, borderRadius: 12, marginBottom: 18, textAlign: 'left' }}>
+            <p style={{ fontWeight: 800, marginBottom: 6, color: 'var(--warning)', fontSize: '0.86rem' }}>{t.lowCertaintyStepsTitle}</p>
+            <ul style={{ fontSize: '0.84rem', paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4, margin: 0, color: 'var(--text-secondary)' }}>
               <li>{t.step1}</li>
               <li>{t.step2}</li>
               <li>{t.step3}</li>
@@ -104,8 +104,15 @@ export const FarmerResultView: React.FC<FarmerResultViewProps> = ({
         )}
 
         {/* Action Advisory Box */}
-        <div style={{ background: isHealthy ? '#f0fdf4' : '#fff7ed', border: `1px solid ${isHealthy ? '#bbf7d0' : '#fed7aa'}`, padding: 16, borderRadius: 12, textAlign: 'left', marginBottom: 18 }}>
-          <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: isHealthy ? 'var(--primary)' : 'var(--warning)', fontWeight: 700, fontSize: '0.95rem' }}>
+        <div style={{ 
+          background: isHealthy ? 'var(--primary-glow)' : 'var(--warning-glow)', 
+          border: `1px solid ${isHealthy ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`, 
+          padding: 16, 
+          borderRadius: 14, 
+          textAlign: 'left', 
+          marginBottom: 18 
+        }}>
+          <h4 style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: isHealthy ? 'var(--primary)' : 'var(--warning)', fontWeight: 800, fontSize: '0.95rem' }}>
             <Info size={18} /> {t.whatToDo}
           </h4>
           <p style={{ fontSize: '0.92rem', lineHeight: 1.6, color: 'var(--text-primary)', margin: 0 }}>
