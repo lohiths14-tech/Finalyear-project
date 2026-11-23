@@ -8,9 +8,15 @@ export interface ApiError {
 
 const getBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) return '/api/v1';
-  const trimmed = envUrl.trim().replace(/\/+$/, '');
-  return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+  if (envUrl) {
+    const trimmed = envUrl.trim().replace(/\/+$/, '');
+    return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+  }
+  // In production builds (Vercel), default directly to our live Render backend:
+  if (import.meta.env.PROD) {
+    return 'https://crop-disease-backend-p5ur.onrender.com/api/v1';
+  }
+  return '/api/v1';
 };
 
 const API_BASE_URL = getBaseUrl();
