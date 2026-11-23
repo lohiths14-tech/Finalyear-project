@@ -1,0 +1,65 @@
+{
+    "protocol_version": "1.0",
+    "frozen_at": "2026-08-24T21:50:00+05:30",
+    "modification_policy": "DO NOT modify after E1 begins. Any protocol change invalidates all experiments.",
+    "seed": 42,
+    "epochs": 50,
+    "optimizer": "AdamW",
+    "learning_rate": 1e-4,
+    "weight_decay": 1e-4,
+    "scheduler": "CosineAnnealingWarmRestarts",
+    "scheduler_params": {
+        "T_0": 10,
+        "T_mult": 2,
+        "eta_min": 1e-6
+    },
+    "batch_size": 16,
+    "early_stopping_patience": 8,
+    "backbone": "DINOv2 ViT-S/14 (frozen)",
+    "feature_dim": 64,
+    "augmentation": "AgriPulse v1.0 (FieldConditionAugmenter)",
+    "pseudo_severity": false,
+    "dataset_split": {
+        "method": "stratified",
+        "train_ratio": 0.8,
+        "val_ratio": 0.1,
+        "test_ratio": 0.1,
+        "split_seed": 42
+    },
+    "experiments": {
+        "E1_Baseline": {
+            "mode": "baseline",
+            "description": "Frozen DINOv2 → Linear classifier + severity head. No spatial or temporal modules."
+        },
+        "E2_Spatial": {
+            "mode": "graph_only",
+            "description": "E1 + GraphTransformer spatial aggregation over patch features."
+        },
+        "E3_Temporal": {
+            "mode": "temporal_only",
+            "description": "E1 + TemporalTransformer sequence modeling (requires multi-frame input)."
+        },
+        "E4_Full": {
+            "mode": "full",
+            "description": "E1 + E2 + E3 + CrossAttentionFusion. Full SST pipeline."
+        }
+    },
+    "success_criteria": {
+        "primary_metric": "test_macro_f1",
+        "primary_threshold": 0.90,
+        "secondary_ece": 0.05,
+        "secondary_brier": 0.10,
+        "latency_cpu_ms": 5000,
+        "deployment_rule": "If E4 improves F1 < 2% over simpler variant but doubles latency, deploy simpler variant."
+    },
+    "evaluation_metrics": [
+        "accuracy",
+        "macro_f1",
+        "per_class_f1",
+        "confusion_matrix",
+        "ece",
+        "brier_score",
+        "severity_mae",
+        "inference_latency_ms"
+    ]
+}

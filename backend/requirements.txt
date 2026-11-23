@@ -1,0 +1,66 @@
+# >
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-multipart
+python-dotenv
+
+# >
+numpy
+opencv-python-headless
+scipy
+scikit-learn
+matplotlib
+pandas
+
+# >
+torch
+torchvision
+torchaudio
+networkx
+
+# >
+aiohttp
+httpx
+celery
+redis
+
+# >
+prometheus-client
+mlflow
+
+# >
+slowapi
+
+# >
+sqlalchemy
+aiosqlite
+asyncpg
+alembic
+greenlet
+
+# >
+python-jose[cryptography]
+passlib[bcrypt]
+
+# >
+pytest
+pytest-asyncio
+pytest-cov
+httpx
+ruff
+
+albumentations
+optuna
+
+# >
+timm
+ultralytics
+einops
+
+# >
+pyyaml
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi

@@ -1,0 +1,37 @@
+{
+  "name": "AgriPulse — AI Crop Disease Intelligence",
+  "short_name": "AgriPulse",
+  "description": "AI-powered precision agriculture platform for crop disease detection, severity scoring, and treatment recommendations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0c10",
+  "theme_color": "#0f4c2a",
+  "categories": ["agriculture", "utilities", "medical"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan Leaf",
+      "short_name": "Leaf Scan",
+      "description": "Upload a leaf image for instant disease diagnosis",
+      "url": "/?tab=leaf",
+      "icons": [{ "src": "favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Field Map",
+      "short_name": "Field Map",
+      "description": "Analyse a field/drone image for spatial disease mapping",
+      "url": "/?tab=field",
+      "icons": [{ "src": "favicon.svg", "sizes": "any" }]
+    }
+  ]
+}

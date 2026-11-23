@@ -1,0 +1,221 @@
+services:
+  # ── API ──────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env.secrets
+    environment:
+      - ENV=production
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+      - BACKEND_CORS_ORIGINS=http://localhost:5173,http://frontend:5173
+      - DATABASE_URL=postgresql+asyncpg://agri:${POSTGRES_PASSWORD}@db:5432/agrivision
+      - REDIS_URL=redis://redis:6379/0
+      - AUTH_DISABLED=false
+    volumes:
+      - agrivision_logs:/var/log/agrivision
+      - ./model_weights:/app/model_weights:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # ── Celery Workers (async inference + offline sync) ────────────────────────
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - .env.secrets
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://agri:${POSTGRES_PASSWORD}@db:5432/agrivision
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1G
+
+  # ── Celery Beat (scheduled tasks — drift monitoring, retraining) ─────────────
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: celery -A app.workers.celery_app beat --loglevel=info
+    env_file:
+      - .env.secrets
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://agri:${POSTGRES_PASSWORD}@db:5432/agrivision
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Frontend ────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Database ───────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env.secrets
+    environment:
+      POSTGRES_DB: agrivision
+      POSTGRES_USER: agri
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/alembic/versions:/docker-entrypoint-initdb.d/migrations:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agri -d agrivision"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Redis (broker + cache) ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # ── Prometheus (metrics collection) ─────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  # ── Grafana (dashboards) ────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.secrets
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ── MLflow (model registry + experiment tracking) ──────────────────────────
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.0
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env.secrets
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_TRACKING_URI: postgresql://agri:${POSTGRES_PASSWORD}@db:5432/agrivision
+      MLFLOW_ARTIFACTS_ROOT: s3://agrivision-models
+    depends_on:
+      - db
+      - minio
+    command: mlflow server --backend-store-uri postgresql://agri:${POSTGRES_PASSWORD}@db:5432/agrivision --default-artifact-root s3://agrivision-models --host 0.0.0.0 --port 5000
+    restart: unless-stopped
+
+  # ── MinIO (S3-compatible object storage for MLflow) ─────────────────────────
+  minio:
+    image: minio/minio:RELEASE.2024-07-04T14-25-45Z
+    ports:
+      - "9001:9001"
+    env_file:
+      - .env.secrets
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  # ── nginx reverse-proxy ────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27.0-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  minio_data:
+  agrivision_logs:

@@ -1,0 +1,106 @@
+{
+    "experiments": {
+        "E1_baseline": {
+            "mode": "baseline",
+            "seeds": [
+                42,
+                123,
+                999
+            ],
+            "f1_per_seed": [
+                0.4973,
+                0.505,
+                0.5052
+            ],
+            "macro_f1_mean": 0.5025,
+            "macro_f1_std": 0.0045,
+            "latency_mean_ms": 0.03,
+            "latency_std_ms": 0.02,
+            "params_trainable": 335174,
+            "params_total": 86917190,
+            "params_frozen": 86582016,
+            "model_size_mb": 331.56
+        },
+        "E2_spatial": {
+            "mode": "graph_only",
+            "seeds": [
+                42,
+                123,
+                999
+            ],
+            "f1_per_seed": [
+                0.7837,
+                0.7747,
+                0.7783
+            ],
+            "macro_f1_mean": 0.7789,
+            "macro_f1_std": 0.0045,
+            "latency_mean_ms": 0.6,
+            "latency_std_ms": 0.15,
+            "params_trainable": 335174,
+            "params_total": 86917190,
+            "params_frozen": 86582016,
+            "model_size_mb": 331.56
+        },
+        "E3_temporal": {
+            "mode": "temporal_only",
+            "seeds": [
+                42,
+                123,
+                999
+            ],
+            "f1_per_seed": [
+                0.9087,
+                0.9043,
+                0.9164
+            ],
+            "macro_f1_mean": 0.9098,
+            "macro_f1_std": 0.0061,
+            "latency_mean_ms": 1.82,
+            "latency_std_ms": 0.29,
+            "params_trainable": 335174,
+            "params_total": 86917190,
+            "params_frozen": 86582016,
+            "model_size_mb": 331.56
+        },
+        "E4_full": {
+            "mode": "full",
+            "seeds": [
+                42,
+                123,
+                999
+            ],
+            "f1_per_seed": [
+                0.9368,
+                0.9461,
+                0.9447
+            ],
+            "macro_f1_mean": 0.9425,
+            "macro_f1_std": 0.005,
+            "latency_mean_ms": 3.79,
+            "latency_std_ms": 0.74,
+            "params_trainable": 385158,
+            "params_total": 86967174,
+            "params_frozen": 86582016,
+            "model_size_mb": 331.75
+        }
+    },
+    "ablation_table": {
+        "E1_baseline": {
+            "macro_f1": "0.503 \u00b1 0.005",
+            "latency": "0.0 \u00b1 0.0 ms"
+        },
+        "E2_spatial": {
+            "macro_f1": "0.779 \u00b1 0.005",
+            "latency": "0.6 \u00b1 0.2 ms"
+        },
+        "E3_temporal": {
+            "macro_f1": "0.910 \u00b1 0.006",
+            "latency": "1.8 \u00b1 0.3 ms"
+        },
+        "E4_full": {
+            "macro_f1": "0.942 \u00b1 0.005",
+            "latency": "3.8 \u00b1 0.7 ms"
+        }
+    }
+}

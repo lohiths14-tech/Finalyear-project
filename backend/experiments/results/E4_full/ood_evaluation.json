@@ -1,0 +1,12 @@
+{
+    "method": "Predictive entropy thresholding (in-distribution only)",
+    "note": "True OOD evaluation requires a separate OOD dataset (e.g., non-plant images). These statistics characterize the entropy distribution of in-distribution predictions.",
+    "entropy_mean": 0.14446759223937988,
+    "entropy_std": 0.2284335196018219,
+    "entropy_max": 1.6094379124341003,
+    "normalized_entropy_mean": 0.08976276421235989,
+    "high_entropy_fraction": 0.1,
+    "threshold_used": 0.5072054266929626,
+    "correct_when_low_entropy": 0.9727891156462585,
+    "correct_when_high_entropy": 0.7551020408163265
+}

@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+venv/
+ENV/
+.env
+db.sqlite3
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ML
+model_weights/*.pt
+!model_weights/classes.json
+
+# IDE
+.vscode/
+.idea/
+.gemini/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Datasets & Large Binaries (Too large for GitHub)
+*.zip
+test_images/
+train_images/
+paddy photos/
+data/
+data_cache/
+runs/
+checkpoints/
+Apple/
+Bell Pepper/
+Cherry/
+Corn (Maize)/
+Grape/
+Peach/
+Potato/
+Strawberry/
+Tomato/
+
+# Virtual Environments & Testing
+.venv*/
+venv/
+ENV/
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+
+# Databases and Logs
+*.db
+*.sqlite3
+backend/logs/
+logs/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lot
+*.lof
+*.bbl
+*.blg
+*.spl
+
+# Secrets — never commit
+.env.secrets
+

@@ -1,0 +1,29 @@
+thresholds:
+  ood:
+    energy_threshold: 0.95
+  quality:
+    iqi_min_acceptable: 0.30
+    noise_max: 0.60
+    blur_max: 0.40
+    brightness_min: 0.50
+    contrast_min: 0.40
+    resolution_min: 0.30
+    shadow_ratio_min: 0.40
+    vegetation_coverage_min: 0.30
+  calibration:
+    low_confidence_threshold: 40.0
+  inference:
+    denoise_strength_high_quality: 7
+    denoise_strength_default: 10
+  reliability:
+    very_reliable_threshold: 0.60
+    reliable_threshold: 0.35
+    uncertain_threshold: 0.15
+
+feature_flags:
+  enable_geospatial: true
+  enable_temporal_stabilization: true
+
+rate_limits:
+  leaf_analysis_per_minute: 20
+  field_analysis_per_minute: 10

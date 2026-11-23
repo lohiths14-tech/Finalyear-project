@@ -1,0 +1,15 @@
+{
+    "model": "E4_full",
+    "datasets": {
+        "paddy_doctor": {
+            "n_samples": 490,
+            "macro_f1": 0.9447,
+            "accuracy": 0.951
+        }
+    },
+    "combined": {
+        "n_samples": 490,
+        "macro_f1": 0.9447,
+        "accuracy": 0.951
+    }
+}

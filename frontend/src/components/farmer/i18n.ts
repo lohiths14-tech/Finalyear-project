@@ -1,0 +1,453 @@
+export interface DiseaseTranslation {
+  name: string;
+  whatIsIt: string;
+  whatToDo: string;
+  dosePerLiter: number;
+  chemName: string;
+  unit: string;
+  frac: string;
+  phi: number;
+}
+
+export interface TranslationDictionary {
+  welcome: string;
+  tip: string;
+  scanField: string;
+  scanFieldSub: string;
+  scanLeaf: string;
+  scanLeafSub: string;
+  pastScans: string;
+  pastScansSub: string;
+  syncScans: string;
+  syncScansSub: string;
+  back: string;
+  backHome: string;
+  analyzing: string;
+  analyzingField: string;
+  analyzingLeaf: string;
+  fieldCpuWait: string;
+  fieldHealth: string;
+  checkRedAreas: string;
+  whatToDo: string;
+  share: string;
+  report: string;
+  wasHelpful: string;
+  yes: string;
+  no: string;
+  highCertainty: string;
+  medCertainty: string;
+  lowCertainty: string;
+  lowCertaintyStepsTitle: string;
+  step1: string;
+  step2: string;
+  step3: string;
+  disclaimer: string;
+  listenVoice: string;
+  stopVoice: string;
+  dosageCalcTitle: string;
+  landSize: string;
+  waterNeeded: string;
+  pumpsNeeded: string;
+  chemNeeded: string;
+  perPumpChem: string;
+  safetyGear: string;
+  shareWhatsApp: string;
+  fracCode: string;
+  phiDays: string;
+  diseases: Record<string, DiseaseTranslation>;
+}
+
+export const I18N: Record<'en' | 'kn' | 'hi' | 'te', TranslationDictionary> = {
+  en: {
+    welcome: "Welcome, Farmer",
+    tip: "Tip: Scan your crops regularly to detect diseases early.",
+    scanField: "🛰️ Scan Your Field (Primary)",
+    scanFieldSub: "Full spatial canopy map of your entire field",
+    scanLeaf: "📸 Scan Single Leaf (Secondary)",
+    scanLeafSub: "Inspect a single crop leaf",
+    pastScans: "Past Scans",
+    pastScansSub: "View your scan history",
+    syncScans: "Sync Offline Scans",
+    syncScansSub: "You have signal now. Click to finish.",
+    back: "Back",
+    backHome: "Back to Home",
+    analyzing: "🔬 AI is analyzing...",
+    analyzingField: "Running spatial field analysis on all vegetation patches",
+    analyzingLeaf: "Running leaf micro-diagnostic",
+    fieldCpuWait: "⏱️ Field analysis typically takes 10–25 seconds. Please keep this open.",
+    fieldHealth: "Field Health Status",
+    checkRedAreas: "Check the RED areas of your field map today.",
+    whatToDo: "What to do now:",
+    share: "Share",
+    report: "Report",
+    wasHelpful: "Was this helpful?",
+    yes: "👍 Yes",
+    no: "👎 No",
+    highCertainty: "High Certainty",
+    medCertainty: "Medium Certainty",
+    lowCertainty: "Low Certainty",
+    lowCertaintyStepsTitle: "3 Steps to get a better result:",
+    step1: "Take a closer, clearer photo",
+    step2: "Make sure there is bright daylight",
+    step3: "Ensure only one leaf is in the photo",
+    disclaimer: "AI suggestion only. Always consult a local agricultural officer for high-stakes decisions.",
+    listenVoice: "🔊 Listen to Diagnosis",
+    stopVoice: "⏹️ Stop Audio",
+    dosageCalcTitle: "🌾 Knapsack Spray & Tank Calculator",
+    landSize: "Land Plot Size:",
+    waterNeeded: "Water Volume:",
+    pumpsNeeded: "16L Knapsack Tanks:",
+    chemNeeded: "Total Chemical Dose:",
+    perPumpChem: "Dose Per Tank (16L):",
+    safetyGear: "Safety PPE & Protection Checklist:",
+    shareWhatsApp: "WhatsApp Advisory",
+    fracCode: "FRAC Resistance Code:",
+    phiDays: "Pre-Harvest Interval (PHI):",
+    diseases: {
+      "Healthy": {
+        name: "Crop is Healthy",
+        whatIsIt: "Your crop looks strong and disease-free.",
+        whatToDo: "Keep doing what you are doing. Maintain balanced fertilization and standard water management.",
+        dosePerLiter: 0.0,
+        chemName: "No chemical spray needed",
+        unit: "g",
+        frac: "N/A",
+        phi: 0,
+      },
+      "Rice Blast": {
+        name: "Rice Blast (ಬೆಂಕಿ ರೋಗ)",
+        whatIsIt: "Spindle-shaped diamond lesions on leaves caused by Magnaporthe fungus.",
+        whatToDo: "Spray Tricyclazole 75% WP @ 0.6 g/L. Avoid excess nitrogen fertilizer.",
+        dosePerLiter: 0.6,
+        chemName: "Tricyclazole 75% WP",
+        unit: "g",
+        frac: "FRAC 16.1 (Melanin Biosynthesis Inhibitor)",
+        phi: 30,
+      },
+      "Brown Spot": {
+        name: "Brown Spot (ಕಂದು ಚುಕ್ಕೆ)",
+        whatIsIt: "Circular oval brown spots with yellow halos caused by Bipolaris fungus.",
+        whatToDo: "Spray Mancozeb 75% WP @ 2.0 g/L or Propiconazole 25% EC @ 1.0 ml/L.",
+        dosePerLiter: 2.0,
+        chemName: "Mancozeb 75% WP",
+        unit: "g",
+        frac: "FRAC M03 (Multi-site Dithiocarbamate)",
+        phi: 14,
+      },
+      "Bacterial Blight": {
+        name: "Bacterial Blight (ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ರೋಗ)",
+        whatIsIt: "Water-soaked yellow wavy stripes drying from leaf tips.",
+        whatToDo: "Spray Copper Oxychloride 50% WP @ 2.5 g/L mixed with Streptocycline @ 0.1 g/L.",
+        dosePerLiter: 2.5,
+        chemName: "Copper Oxychloride 50% WP + Streptocycline",
+        unit: "g",
+        frac: "FRAC M01 + FRAC 25",
+        phi: 10,
+      },
+      "Leaf Scald": {
+        name: "Leaf Scald (ಎಲೆ ಸುಟ್ಟ ರೋಗ)",
+        whatIsIt: "Zonate scald bands with olive-brown margins on leaf blades.",
+        whatToDo: "Spray Carbendazim 50% WP @ 1.0 g/L. Improve field drainage.",
+        dosePerLiter: 1.0,
+        chemName: "Carbendazim 50% WP",
+        unit: "g",
+        frac: "FRAC 1 (MBC Systemic)",
+        phi: 21,
+      },
+    }
+  },
+  kn: {
+    welcome: "ರೈತ ಮಿತ್ರರಿಗೆ ಸುಸ್ವಾಗತ",
+    tip: "ಸಲಹೆ: ರೋಗಗಳನ್ನು ಆರಂಭದಲ್ಲೇ ಪತ್ತೆಹಚ್ಚಲು ನಿಮ್ಮ ಬೆಳೆಗಳನ್ನು ನಿಯಮಿತವಾಗಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ.",
+    scanField: "🛰️ ನಿಮ್ಮ ಜಮೀನನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ (ಮುಖ್ಯ)",
+    scanFieldSub: "ನಿಮ್ಮ ಇಡೀ ಜಮೀನಿನ ಸಂಪೂರ್ಣ ರೋಗ ಹಾಗೂ ಬೆಳೆ ಆರೋಗ್ಯ ನಕ್ಷೆ",
+    scanLeaf: "📸 ಒಂದೇ ಎಲೆಯನ್ನು ಸ್ಕ್ಯಾನ್ ಮಾಡಿ (ದ್ವಿತೀಯ)",
+    scanLeafSub: "ಒಂದೇ ಗಿಡದ ಎಲೆಯನ್ನು ತ್ವರಿತವಾಗಿ ಪರಿಶೀಲಿಸಿ",
+    pastScans: "ಹಿಂದಿನ ಸ್ಕ್ಯಾನ್‌ಗಳು",
+    pastScansSub: "ನಿಮ್ಮ ಹಿಂದಿನ ಎಲ್ಲಾ ತಪಾಸಣೆಗಳನ್ನು ವೀಕ್ಷಿಸಿ",
+    syncScans: "ಆಫ್‌ಲೈನ್ ಸ್ಕ್ಯಾನ್ ಸಿಂಕ್ ಮಾಡಿ",
+    syncScansSub: "ನೆಟ್‌ವರ್ಕ್ ಲಭ್ಯವಿದೆ. ಮುಗಿಸಲು ಕ್ಲಿಕ್ ಮಾಡಿ.",
+    back: "ಹಿಂದೆ",
+    backHome: "ಮುಖಪುಟಕ್ಕೆ ಹಿಂತಿರುಗಿ",
+    analyzing: "🔬 ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆ (AI) ಪರಿಶೀಲಿಸುತ್ತಿದೆ...",
+    analyzingField: "ಜಮೀನಿನ ಎಲ್ಲಾ ಎಲೆಗಳ ರೋಗ ತೀವ್ರತೆಯನ್ನು ಲೆಕ್ಕಹಾಕಲಾಗುತ್ತಿದೆ",
+    analyzingLeaf: "ಎಲೆಯ ಸೂಕ್ಷ್ಮ ರೋಗನಿರ್ಣಯ ನಡೆಯುತ್ತಿದೆ",
+    fieldCpuWait: "⏱️ ಜಮೀನಿನ ವಿಶ್ಲೇಷಣೆಗೆ ಕೆಲವೇ ಕ್ಷಣಗಳು ಬೇಕಾಗುತ್ತವೆ. ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ.",
+    fieldHealth: "ಜಮೀನಿನ ಆರೋಗ್ಯ ಸ್ಥಿತಿ",
+    checkRedAreas: "ಇಂದು ನಿಮ್ಮ ಜಮೀನಿನ ಕೆಂಪು (ಅಪಾಯ) ಭಾಗಗಳನ್ನು ಪರೀಕ್ಷಿಸಿ.",
+    whatToDo: "ಈಗ ಏನು ಮಾಡಬೇಕು:",
+    share: "ಹಂಚಿಕೊಳ್ಳಿ",
+    report: "ವರದಿ",
+    wasHelpful: "ಇದು ನಿಮಗೆ ಉಪಯುಕ್ತವಾಯಿತೇ?",
+    yes: "👍 ಹೌದು",
+    no: "👎 ಇಲ್ಲ",
+    highCertainty: "ಹೆಚ್ಚಿನ ಖಚಿತತೆ",
+    medCertainty: "ಮಧ್ಯಮ ಖಚಿತತೆ",
+    lowCertainty: "ಕಡಿಮೆ ಖಚಿತತೆ",
+    lowCertaintyStepsTitle: "ಉತ್ತಮ ಫಲಿತಾಂಶಕ್ಕಾಗಿ 3 ಹಂತಗಳು:",
+    step1: "ಹತ್ತಿರದಿಂದ ಸ್ಪಷ್ಟವಾದ ಫೋಟೋ ತೆಗೆದುಕೊಳ್ಳಿ",
+    step2: "ಉತ್ತಮ ಬೆಳಕಿನಲ್ಲಿ ಫೋಟೋ ತೆಗೆಯಿರಿ",
+    step3: "ಫೋಟೋದಲ್ಲಿ ಒಂದೇ ಎಲೆ ಇರುವಂತೆ ನೋಡಿಕೊಳ್ಳಿ",
+    disclaimer: "ಇದು ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆ ಸಲಹೆ ಮಾತ್ರ. ಗಂಭೀರ ನಿರ್ಧಾರಗಳಿಗೆ ಸ್ಥಳೀಯ ಕೃಷಿ ಅಧಿಕಾರಿಯನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+    listenVoice: "🔊 ಧ್ವನಿಯಲ್ಲಿ ಆಲಿಸಿ",
+    stopVoice: "⏹️ ಧ್ವನಿ ನಿಲ್ಲಿಸಿ",
+    dosageCalcTitle: "🌾 ಸ್ಪ್ರೇ ಪಂಪ್ ಮತ್ತು ಔಷಧ ಪ್ರಮಾಣ ಕ್ಯಾಲ್ಕುಲೇಟರ್",
+    landSize: "ಜಮೀನಿನ ವಿಸ್ತೀರ್ಣ:",
+    waterNeeded: "ಬೇಕಾಗುವ ನೀರು:",
+    pumpsNeeded: "16 ಲೀಟರ್ ಸ್ಪ್ರೇ ಪಂಪ್‌ಗಳ ಸಂಖ್ಯೆ:",
+    chemNeeded: "ಒಟ್ಟು ಬೇಕಾಗುವ ಔಷಧ:",
+    perPumpChem: "ಪ್ರತಿ ಪಂಪ್‌ಗೆ ಔಷಧ (16ಲೀ):",
+    safetyGear: "ಸುರಕ್ಷತಾ ಮುನ್ನೆಚ್ಚರಿಕೆಗಳು:",
+    shareWhatsApp: "ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ಹಂಚಿಕೊಳ್ಳಿ",
+    fracCode: "ರೋಗ ನಿರೋಧಕತೆ ಕೋಡ್ (FRAC):",
+    phiDays: "ಕೊಯ್ಲಿಗೆ ಮುಂಚಿನ ದಿನಗಳು (PHI):",
+    diseases: {
+      "Healthy": {
+        name: "ಬೆಳೆ ಆರೋಗ್ಯಕರವಾಗಿದೆ",
+        whatIsIt: "ನಿಮ್ಮ ಬೆಳೆ ಸದೃಢವಾಗಿದ್ದು ಯಾವುದೇ ರೋಗದ ಲಕ್ಷಣಗಳಿಲ್ಲ.",
+        whatToDo: "ಸಾಮಾನ್ಯ ಪೋಷಕಾಂಶ ಹಾಗೂ ನೀರಿನ ನಿರ್ವಹಣೆಯನ್ನು ಮುಂದುವರಿಸಿ.",
+        dosePerLiter: 0.0,
+        chemName: "ಯಾವುದೇ ರಾಸಾಯನಿಕ ಸಿಂಪಡಣೆ ಅಗತ್ಯವಿಲ್ಲ",
+        unit: "g",
+        frac: "N/A",
+        phi: 0,
+      },
+      "Rice Blast": {
+        name: "ಭತ್ತದ ಬೆಂಕಿ ರೋಗ (ಬ್ಲಾಸ್ಟ್)",
+        whatIsIt: "ಎಲೆಗಳ ಮೇಲೆ ಕಣ್ಣಿನ ಆಕಾರದ ಕಂದು ಮಚ್ಚೆಗಳು (ಶಿಲೀಂಧ್ರ ರೋಗ).",
+        whatToDo: "ಟ್ರೈಸೈಕ್ಲಾಜೋಲ್ 75% WP ಅನ್ನು 0.6 ಗ್ರಾಂ/ಲೀಟರ್ ನೀರಿನಲ್ಲಿ ಬೆರೆಸಿ ಸಿಂಪಡಿಸಿ. ಯೂರಿಯಾ ಗೊಬ್ಬರವನ್ನು ಮಿತವಾಗಿ ಬಳಸಿ.",
+        dosePerLiter: 0.6,
+        chemName: "ಟ್ರೈಸೈಕ್ಲಾಜೋಲ್ 75% WP",
+        unit: "ಗ್ರಾಂ",
+        frac: "FRAC 16.1",
+        phi: 30,
+      },
+      "Brown Spot": {
+        name: "ಕಂದು ಚುಕ್ಕೆ ರೋಗ",
+        whatIsIt: "ಎಲೆಗಳ ಮೇಲೆ ದುಂಡಗಿನ ಕಂದು ಬಣ್ಣದ ಚುಕ್ಕೆಗಳು ಕಾಣಿಸಿಕೊಳ್ಳುತ್ತವೆ.",
+        whatToDo: "ಮ್ಯಾಂಕೋಜೆಬ್ 75% WP @ 2 ಗ್ರಾಂ ಅಥವಾ ಪ್ರೊಪಿಕೊನಾಜೋಲ್ 25% EC @ 1 ಮಿ.ಲೀ/ಲೀಟರ್ ಸಿಂಪಡಿಸಿ.",
+        dosePerLiter: 2.0,
+        chemName: "ಮ್ಯಾಂಕೋಜೆಬ್ 75% WP",
+        unit: "ಗ್ರಾಂ",
+        frac: "FRAC M03",
+        phi: 14,
+      },
+      "Bacterial Blight": {
+        name: "ಬ್ಯಾಕ್ಟೀರಿಯಲ್ ಎಲೆ ರೋಗ",
+        whatIsIt: "ಎಲೆಯ ಅಂಚುಗಳು ಹಳದಿಯಾಗಿ ಒಣಗುವ ಲಕ್ಷಣ (ಬ್ಯಾಕ್ಟೀರಿಯಾ ರೋಗ).",
+        whatToDo: "ಕಾಪರ್ ಆಕ್ಸಿಕ್ಲೋರೈಡ್ @ 2.5 ಗ್ರಾಂ + ಸ್ಟ್ರೆಪ್ಟೋಸೈಕ್ಲಿನ್ 0.1 ಗ್ರಾಂ/ಲೀಟರ್ ನೀರಿನಲ್ಲಿ ಬೆರೆಸಿ ಸಿಂಪಡಿಸಿ.",
+        dosePerLiter: 2.5,
+        chemName: "ಕಾಪರ್ ಆಕ್ಸಿಕ್ಲೋರೈಡ್ + ಸ್ಟ್ರೆಪ್ಟೋಸೈಕ್ಲಿನ್",
+        unit: "ಗ್ರಾಂ",
+        frac: "FRAC M01 + 25",
+        phi: 10,
+      },
+      "Leaf Scald": {
+        name: "ಎಲೆ ಸುಟ್ಟ ರೋಗ (ಲೀಫ್ ಸ್ಕಾಲ್ಡ್)",
+        whatIsIt: "ಎಲೆಯ ತುದಿಯಿಂದ ಸುಟ್ಟಂತೆ ಪಟ್ಟೆಗಳು ಉಂಟಾಗುತ್ತವೆ.",
+        whatToDo: "ಕಾರ್ಬೆಂಡಾಜಿಮ್ 50% WP @ 1 ಗ್ರಾಂ/ಲೀಟರ್ ನೀರಿನಲ್ಲಿ ಬೆರೆಸಿ ಸಿಂಪಡಿಸಿ.",
+        dosePerLiter: 1.0,
+        chemName: "ಕಾರ್ಬೆಂಡಾಜಿಮ್ 50% WP",
+        unit: "ಗ್ರಾಂ",
+        frac: "FRAC 1",
+        phi: 21,
+      },
+    }
+  },
+  hi: {
+    welcome: "किसान भाई, आपका स्वागत है",
+    tip: "सलाह: बीमारियों का जल्द पता लगाने के लिए फसलों की नियमित जांच करें।",
+    scanField: "🛰️ अपने पूरे खेत को स्कैन करें (मुख्य)",
+    scanFieldSub: "पूरे खेत का पूर्ण फसल स्वास्थ्य एवं रोग मानचित्र",
+    scanLeaf: "📸 एक पत्ती को स्कैन करें (द्वितीयक)",
+    scanLeafSub: "एक पौधे की पत्ती की सूक्ष्म जांच करें",
+    pastScans: "पुराने स्कैन",
+    pastScansSub: "अपना पिछला इतिहास देखें",
+    syncScans: "ऑफ़लाइन स्कैन सिंक करें",
+    syncScansSub: "नेटवर्क उपलब्ध है। पूरा करने के लिए क्लिक करें।",
+    back: "वापस",
+    backHome: "होम पर वापस जाएं",
+    analyzing: "🔬 एआई (AI) विश्लेषण कर रहा है...",
+    analyzingField: "खेत की सभी पत्तियों के स्वास्थ्य की गणना की जा रही है",
+    analyzingLeaf: "पत्ती का सूक्ष्म रोग परीक्षण जारी है",
+    fieldCpuWait: "⏱️ विश्लेषण में कुछ ही सेकंड लगेंगे। कृपया प्रतीक्षा करें।",
+    fieldHealth: "खेत का स्वास्थ्य",
+    checkRedAreas: "आज ही अपने खेत के लाल (संक्रमित) हिस्सों की जांच करें।",
+    whatToDo: "अब क्या करना चाहिए:",
+    share: "साझा करें",
+    report: "रिपोर्ट",
+    wasHelpful: "क्या यह मददगार था?",
+    yes: "👍 हाँ",
+    no: "👎 नहीं",
+    highCertainty: "उच्च सटीकता",
+    medCertainty: "मध्यम सटीकता",
+    lowCertainty: "कम सटीकता",
+    lowCertaintyStepsTitle: "बेहतर परिणाम के लिए 3 कदम:",
+    step1: "पास से स्पष्ट फोटो लें",
+    step2: "पर्याप्त रोशनी में फोटो खींचें",
+    step3: "फोटो में केवल एक पत्ती रखें",
+    disclaimer: "यह केवल एआई सलाह है। बड़े निर्णयों के लिए स्थानीय कृषि विशेषज्ञ से संपर्क करें।",
+    listenVoice: "🔊 बोलकर सुनें",
+    stopVoice: "⏹️ बोलना बंद करें",
+    dosageCalcTitle: "🌾 स्प्रे पंप और दवा मात्रा कैलकुलेटर",
+    landSize: "जमीन का आकार:",
+    waterNeeded: "आवश्यक पानी:",
+    pumpsNeeded: "16L स्प्रे पंपों की संख्या:",
+    chemNeeded: "कुल आवश्यक दवा:",
+    perPumpChem: "प्रति पंप दवा (16L):",
+    safetyGear: "सुरक्षा उपकरण चेकलिस्ट:",
+    shareWhatsApp: "व्हाट्सएप पर साझा करें",
+    fracCode: "प्रतिरोध कोड (FRAC):",
+    phiDays: "कटाई से पहले का अंतराल (PHI):",
+    diseases: {
+      "Healthy": {
+        name: "फसल स्वस्थ है",
+        whatIsIt: "आपकी फसल पूरी तरह मजबूत और रोगमुक्त है।",
+        whatToDo: "सामान्य सिंचाई और संतुलित खाद जारी रखें।",
+        dosePerLiter: 0.0,
+        chemName: "किसी रासायनिक छिड़काव की आवश्यकता नहीं है",
+        unit: "g",
+        frac: "N/A",
+        phi: 0,
+      },
+      "Rice Blast": {
+        name: "धान का झुलसा रोग (ब्लास्ट)",
+        whatIsIt: "पत्तियों पर आंख के आकार के भूरे धब्बे (फफूंद जनित)।",
+        whatToDo: "ट्राइसाइक्लाजोल 75% WP @ 0.6 ग्राम/लीटर पानी में घोलकर छिड़कें। यूरिया का अधिक उपयोग न करें।",
+        dosePerLiter: 0.6,
+        chemName: "ट्राइसाइक्लाजोल 75% WP",
+        unit: "ग्राम",
+        frac: "FRAC 16.1",
+        phi: 30,
+      },
+      "Brown Spot": {
+        name: "भूरा धब्बा रोग (ब्राउन स्पॉट)",
+        whatIsIt: "पत्तियों पर गोल अंडाकार भूरे रंग के धब्बे।",
+        whatToDo: "मैनकोजेब 75% WP @ 2.0 ग्राम या प्रोपिकोनाजोल @ 1 मिली/लीटर पानी में छिड़कें।",
+        dosePerLiter: 2.0,
+        chemName: "मैनकोजेब 75% WP",
+        unit: "ग्राम",
+        frac: "FRAC M03",
+        phi: 14,
+      },
+      "Bacterial Blight": {
+        name: "जीवाणु पत्ती झुलसा (बैक्टीरियल ब्लाइट)",
+        whatIsIt: "पत्तियों के किनारों से पीली लहरदार धारियां सूखना।",
+        whatToDo: "कॉपर ऑक्सीक्लोराइड 50% WP @ 2.5 ग्राम + स्ट्रेप्टोसाइक्लिन 0.1 ग्राम/लीटर छिड़कें।",
+        dosePerLiter: 2.5,
+        chemName: "कॉपर ऑक्सीक्लोराइड + स्ट्रेप्टोसाइक्लिन",
+        unit: "ग्राम",
+        frac: "FRAC M01 + 25",
+        phi: 10,
+      },
+      "Leaf Scald": {
+        name: "पत्ती झुलसन (लीफ स्कैल्ड)",
+        whatIsIt: "पत्तियों के अग्रभाग पर पट्टियों जैसे घाव।",
+        whatToDo: "कार्बेन्डाजिम 50% WP @ 1.0 ग्राम/लीटर पानी में मिलाकर छिड़काव करें।",
+        dosePerLiter: 1.0,
+        chemName: "कार्बेन्डाजिम 50% WP",
+        unit: "ग्राम",
+        frac: "FRAC 1",
+        phi: 21,
+      },
+    }
+  },
+  te: {
+    welcome: "రైతు మిత్రులకు స్వాగతం",
+    tip: "సలహా: తెగుళ్లను ముందుగానే గుర్తించడానికి పంటను క్రమం తప్పకుండా స్కాన్ చేయండి.",
+    scanField: "🛰️ మీ పొలాన్ని స్కాన్ చేయండి (ప్రధానం)",
+    scanFieldSub: "మీ మొత్తం పొలం యొక్క పూర్తి పంట వ్యాధి మ్యాప్",
+    scanLeaf: "📸 ఒక ఆకును స్కాన్ చేయండి (ద్వితీయం)",
+    scanLeafSub: "ఒకే మొక్క ఆకును తనిఖీ చేయండి",
+    pastScans: "గత స్కాన్‌లు",
+    pastScansSub: "మీ మునుపటి చరిత్రను చూడండి",
+    syncScans: "ఆఫ్‌లైన్ సమకాలీకరించండి",
+    syncScansSub: "సిగ్నల్ వచ్చింది. పూర్తి చేయడానికి క్లిక్ చేయండి.",
+    back: "వెనుకకు",
+    backHome: "హోమ్‌కి తిరిగి వెళ్ళండి",
+    analyzing: "🔬 కృత్రిమ మేధస్సు (AI) విశ్లేషిస్తోంది...",
+    analyzingField: "పొలంలోని అన్ని ఆకుల ఆరోగ్యాన్ని లెక్కిస్తోంది",
+    analyzingLeaf: "ఆకు సూక్ష్మ నిర్ధారణ జరుగుతోంది",
+    fieldCpuWait: "⏱️ విశ్లేషణకు కొద్ది సమయం పడుతుంది. దయచేసి వేచి ఉండండి.",
+    fieldHealth: "పొలం ఆరోగ్యం",
+    checkRedAreas: "ఈరోజు మీ పొలంలోని ఎరుపు (తెగులు) ప్రాంతాలను పరిశీలించండి.",
+    whatToDo: "ఇప్పుడు ఏమి చేయాలి:",
+    share: "షేర్ చేయండి",
+    report: "నివేదిక",
+    wasHelpful: "ఇది ఉపయోగపడిందా?",
+    yes: "👍 అవును",
+    no: "👎 కాదు",
+    highCertainty: "అధిక ఖచ్చితత్వం",
+    medCertainty: "మధ్యస్థ ఖచ్చితత్వం",
+    lowCertainty: "తక్కువ ఖచ్చితత్వం",
+    lowCertaintyStepsTitle: "మంచి ఫలితం కోసం 3 చిట్కాలు:",
+    step1: "దగ్గరగా స్పష్టమైన ఫోటో తీయండి",
+    step2: "మంచి వెలుతురులో ఫోటో తీయండి",
+    step3: "ఫోటోలో ఒకే ఆకు ఉండేలా చూసుకోండి",
+    disclaimer: "ఇది AI సూచన మాత్రమే. కీలక నిర్ణయాలకు స్థానిక వ్యవసాయ అధికారిని సంప్రదించండి.",
+    listenVoice: "🔊 శబ్దంలో వినండి",
+    stopVoice: "⏹️ వాయిస్ ఆపండి",
+    dosageCalcTitle: "🌾 పిచికారీ పంపు మరియు మందు మోతాదు కాలిక్యులేటర్",
+    landSize: "భూమి విస్తీర్ణం:",
+    waterNeeded: "అవసరమైన నీరు:",
+    pumpsNeeded: "16L పిచికారీ పంపుల సంఖ్య:",
+    chemNeeded: "మొత్తం అవసరమైన మందు:",
+    perPumpChem: "ప్రతి పంపుకు మందు (16L):",
+    safetyGear: "భద్రతా సూచనలు:",
+    shareWhatsApp: "వాట్సాప్‌లో షేర్ చేయండి",
+    fracCode: "రెసిస్టెన్స్ కోడ్ (FRAC):",
+    phiDays: "కోతకు ముందు సమయం (PHI):",
+    diseases: {
+      "Healthy": {
+        name: "పంట ఆరోగ్యంగా ఉంది",
+        whatIsIt: "మీ పంట బలంగా మరియు తెగుళ్లు లేకుండా ఉంది.",
+        whatToDo: "సాధారణ నీరు మరియు ఎరువుల యాజమాన్యాన్ని కొనసాగించండి.",
+        dosePerLiter: 0.0,
+        chemName: "ఎలాంటి రసాయన పిచికారీ అవసరం లేదు",
+        unit: "g",
+        frac: "N/A",
+        phi: 0,
+      },
+      "Rice Blast": {
+        name: "వరి అగ్గి తెగులు (బ్లాస్ట్)",
+        whatIsIt: "ఆకులపై కంటి ఆకారపు గోధుమ మచ్చలు ఏర్పడటం.",
+        whatToDo: "ట్రైసైక్లాజోల్ 75% WP ని 0.6 గ్రా/లీటరు నీటిలో కలిపి పిచికారీ చేయండి.",
+        dosePerLiter: 0.6,
+        chemName: "ట్రైసైక్లాజోల్ 75% WP",
+        unit: "గ్రాములు",
+        frac: "FRAC 16.1",
+        phi: 30,
+      },
+      "Brown Spot": {
+        name: "గోధుమ రంగు మచ్చ తెగులు",
+        whatIsIt: "ఆకులపై గుండ్రని గోధుమ రంగు మచ్చలు.",
+        whatToDo: "మాంకోజెబ్ 75% WP @ 2.0 గ్రా లేదా ప్రొపికొనజోల్ @ 1 మి.లీ/లీటరు పిచికారీ చేయండి.",
+        dosePerLiter: 2.0,
+        chemName: "మాంకోజెబ్ 75% WP",
+        unit: "గ్రాములు",
+        frac: "FRAC M03",
+        phi: 14,
+      },
+      "Bacterial Blight": {
+        name: "బాక్టీరియల్ ఆకు ఎండు తెగులు",
+        whatIsIt: "ఆకుల అంచుల నుండి పసుపు రంగు చారలు ఎండిపోవడం.",
+        whatToDo: "కాపర్ ఆక్సిక్లోరైడ్ 50% WP @ 2.5 గ్రా + స్ట్రెప్టోసైక్లిన్ 0.1 గ్రా/లీటరు పిచికారీ చేయండి.",
+        dosePerLiter: 2.5,
+        chemName: "కాపర్ ఆక్సిక్లోరైడ్ + స్ట్రెప్టోసైక్లిన్",
+        unit: "గ్రాములు",
+        frac: "FRAC M01 + 25",
+        phi: 10,
+      },
+      "Leaf Scald": {
+        name: "ఆకు మాడు తెగులు",
+        whatIsIt: "ఆకులపై కాలిపోయినట్లుగా పట్టీల వంటి మచ్చలు.",
+        whatToDo: "కార్బెండజిమ్ 50% WP @ 1.0 గ్రా/లీటరు నీటిలో కలిపి పిచికారీ చేయండి.",
+        dosePerLiter: 1.0,
+        chemName: "కార్బెండజిమ్ 50% WP",
+        unit: "గ్రాములు",
+        frac: "FRAC 1",
+        phi: 21,
+      },
+    }
+  }
+};

@@ -1,0 +1,65 @@
+{
+    "methodology": "Three-way split: 70% train / 15% calibrate / 15% test \u2014 no data leakage",
+    "temperature_star": 0.792929292929293,
+    "reliability_bins": [
+        {
+            "confidence": 0.45086705684661865,
+            "accuracy": 0.0,
+            "count": 1
+        },
+        {
+            "confidence": 0.5058846473693848,
+            "accuracy": 0.75,
+            "count": 4
+        },
+        {
+            "confidence": 0.5682859420776367,
+            "accuracy": 0.6666666666666666,
+            "count": 6
+        },
+        {
+            "confidence": 0.636975884437561,
+            "accuracy": 0.6363636363636364,
+            "count": 11
+        },
+        {
+            "confidence": 0.7101742625236511,
+            "accuracy": 0.7692307692307693,
+            "count": 13
+        },
+        {
+            "confidence": 0.7683485150337219,
+            "accuracy": 0.8571428571428571,
+            "count": 14
+        },
+        {
+            "confidence": 0.8351474404335022,
+            "accuracy": 1.0,
+            "count": 19
+        },
+        {
+            "confidence": 0.9051787257194519,
+            "accuracy": 0.95,
+            "count": 20
+        },
+        {
+            "confidence": 0.9897245764732361,
+            "accuracy": 0.9979879275653923,
+            "count": 497
+        }
+    ],
+    "methods": [
+        "Uncalibrated",
+        "Temp. Scaling",
+        "Isotonic",
+        "Combined"
+    ],
+    "ece_values": [
+        2.08,
+        1.18,
+        2.08,
+        1.18
+    ],
+    "calib_set_size": 585,
+    "test_set_size": 585
+}

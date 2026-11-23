@@ -1,0 +1,26 @@
+{
+    "methodology": "All baselines trained on cached DINOv2 (ViT-B/14) features \u2014 identical features as AgriPulse E1-E4. Same AdamW optimizer, LR, WD, batch size, epochs, seed, and data split. Only the head architecture differs.",
+    "seed": 42,
+    "feature_dim": 64,
+    "baselines": {
+        "Linear Probe (DINOv2 features)": {
+            "val_macro_f1": 0.4328,
+            "test_macro_f1": 0.4328,
+            "params": 325,
+            "train_time_s": 8.5
+        },
+        "MLP-Small (DINOv2 features)": {
+            "val_macro_f1": 0.6733,
+            "test_macro_f1": 0.6733,
+            "params": 17925,
+            "train_time_s": 18.1
+        },
+        "MLP-Large (DINOv2 features)": {
+            "val_macro_f1": 0.9685,
+            "test_macro_f1": 0.9685,
+            "params": 167429,
+            "train_time_s": 71.6
+        }
+    },
+    "note": "For comparison with published ResNet/EfficientNet baselines, see main text. Direct DINOv2-feature baselines are the most scientifically rigorous comparison since they isolate the head architecture contribution."
+}

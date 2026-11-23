@@ -1,0 +1,236 @@
+{
+  "generated_at": "2026-06-25T09:17:28Z",
+  "dataset": {
+    "crop": "rice",
+    "num_classes": 5,
+    "class_names": [
+      "Healthy",
+      "Rice Blast",
+      "Brown Spot",
+      "Leaf Scald",
+      "Bacterial Blight"
+    ],
+    "samples_per_class": 1000,
+    "total_samples": 5000,
+    "val_split": 0.15,
+    "num_seeds": 5
+  },
+  "models": {
+    "MLP Baseline": {
+      "accuracy_mean": 1.0,
+      "accuracy_std": 0.0,
+      "f1_mean": 1.0,
+      "f1_std": 0.0,
+      "mae_mean": 13.101000213623047,
+      "mae_std": 1.7304253601427608,
+      "rmse_mean": 16.107798385620118,
+      "rmse_std": 2.1294984206840692,
+      "best_accuracy": 1.0,
+      "best_f1": 1.0,
+      "best_mae": 12.397418975830078,
+      "best_confusion_matrix": [
+        [
+          143,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          149,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          151,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          151,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          156
+        ]
+      ],
+      "per_seed_accuracy": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "1D-CNN Spectral": {
+      "accuracy_mean": 0.9194666666666667,
+      "accuracy_std": 0.09872286687715487,
+      "f1_mean": 0.8929193246533718,
+      "f1_std": 0.1311467777143188,
+      "mae_mean": 9.065034961700439,
+      "mae_std": 2.8870597942755785,
+      "rmse_mean": 10.779093647003174,
+      "rmse_std": 3.350012100913379,
+      "best_accuracy": 1.0,
+      "best_f1": 1.0,
+      "best_mae": 6.730589866638184,
+      "best_confusion_matrix": [
+        [
+          140,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          144,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          138,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          152,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          176
+        ]
+      ],
+      "per_seed_accuracy": [
+        0.792,
+        1.0,
+        0.8053333333333333,
+        1.0,
+        1.0
+      ]
+    },
+    "SST Ensemble": {
+      "accuracy_mean": 0.9888,
+      "accuracy_std": 0.022400000000000017,
+      "f1_mean": 0.9888940568475452,
+      "f1_std": 0.022211886304909577,
+      "mae_mean": 6.459021759033203,
+      "mae_std": 0.46717504044938585,
+      "rmse_mean": 7.980452823638916,
+      "rmse_std": 0.6570437503534208,
+      "best_accuracy": 1.0,
+      "best_f1": 1.0,
+      "best_mae": 7.0812273025512695,
+      "best_confusion_matrix": [
+        [
+          140,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          144,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          138,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          152,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          176
+        ]
+      ],
+      "per_seed_accuracy": [
+        0.944,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "ablation": [
+    {
+      "name": "Spectral Only (1D-CNN)",
+      "accuracy": 0.792,
+      "macro_f1": 0.7318777292576419,
+      "mae": 13.616127967834473,
+      "rmse": 15.928338050842285
+    },
+    {
+      "name": "Spectral + Spatial",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "mae": 9.059480667114258,
+      "rmse": 10.697080612182617
+    },
+    {
+      "name": "Spectral + Temporal",
+      "accuracy": 1.0,
+      "macro_f1": 1.0,
+      "mae": 8.741778373718262,
+      "rmse": 10.561413764953613
+    },
+    {
+      "name": "Full SST Ensemble (Ours)",
+      "accuracy": 0.944,
+      "macro_f1": 0.944470284237726,
+      "mae": 6.872908115386963,
+      "rmse": 8.582178115844727
+    }
+  ],
+  "calibration": {
+    "ece_raw": 0.03890880393981933,
+    "ece_temp_scale": 0.2674521870613098,
+    "ece_isotonic": 0.0,
+    "ece_combined": 0.0,
+    "ece_reduction_pct": 100.0
+  },
+  "figures": {
+    "fig2_training_curves": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig2_training_curves.png",
+    "fig3_confusion_matrix": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig3_confusion_matrix.png",
+    "fig4_calibration": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig4_calibration.png",
+    "fig5_sota_comparison": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig5_sota_comparison.png",
+    "fig6_ablation": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig6_ablation.png",
+    "fig7_per_class": "E:\\projects\\agri new\\model_weights\\publication_results\\figures\\fig7_per_class_metrics.png"
+  }
+}
