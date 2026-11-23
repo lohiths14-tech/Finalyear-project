@@ -48,9 +48,10 @@ interface LoginScreenProps {
   apiKeyInput: string;
   setApiKeyInput: (v: string) => void;
   onLogin: () => void;
+  onGuest: () => void;
 }
 
-function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin }: LoginScreenProps) {
+function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin, onGuest }: LoginScreenProps) {
   return (
     <div className="login-screen">
       <motion.div
@@ -66,31 +67,51 @@ function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin }: LoginScreenProps)
           </div>
           <div>
             <div className="login-title">AgriPulse 2.0</div>
-            <div className="login-subtitle">Enter your API key to access enterprise intelligence</div>
+            <div className="login-subtitle">Enter your API key or continue as Guest</div>
           </div>
         </div>
 
         {/* Form */}
         <div className="login-form">
           <div className="form-group">
-            <label className="form-label">X-API-Key</label>
+            <label className="form-label">X-API-Key (Optional)</label>
             <input
               id="api-key-input"
-              type="password"
+              type="text"
               className="form-input"
-              placeholder="Enter your API key…"
+              placeholder="e.g. demo (or leave blank for guest)…"
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && apiKeyInput.trim()) onLogin(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') onLogin(); }}
               autoFocus
             />
           </div>
           <button
             id="login-btn"
             className="btn-login"
-            onClick={() => { if (apiKeyInput.trim()) onLogin(); }}
+            onClick={onLogin}
           >
             Authenticate &amp; Enter
+          </button>
+          <button
+            type="button"
+            className="btn-guest"
+            style={{
+              marginTop: '0.6rem',
+              width: '100%',
+              padding: '0.65rem 1rem',
+              borderRadius: '0.5rem',
+              border: '1px solid #cbd5e1',
+              backgroundColor: '#f8fafc',
+              color: '#475569',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onClick={onGuest}
+          >
+            Enter as Demo / Guest
           </button>
         </div>
 
@@ -139,7 +160,8 @@ function App() {
       apiClient.get('/health').then(() => {
         login('__no_auth__');
       }).catch(() => {
-        // Show login form
+        // Cold start or network glitch: auto-login to demo
+        login('__no_auth__');
       }).finally(() => {
         setAuthChecked(true);
       });
@@ -210,7 +232,8 @@ function App() {
         <LoginScreen
           apiKeyInput={apiKeyInput}
           setApiKeyInput={setApiKeyInput}
-          onLogin={() => { if (apiKeyInput.trim()) login(apiKeyInput.trim()); }}
+          onLogin={() => { login(apiKeyInput.trim() || '__no_auth__'); }}
+          onGuest={() => { login('__no_auth__'); }}
         />
         <ToastContainer toasts={toasts} removeToast={removeToast} />
       </ErrorBoundary>
