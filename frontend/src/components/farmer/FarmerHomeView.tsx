@@ -2,7 +2,6 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Camera, Map, History, Upload, Info } from 'lucide-react';
 import { FarmerLanguageSelector } from './FarmerLanguageSelector';
-import SampleGallery from '../ui/SampleGallery';
 import type { Language, OfflineQueueItem } from '../../types';
 import type { TranslationDictionary } from './i18n';
 
@@ -77,12 +76,6 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
             <div className="farmer-sublabel" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{t.pastScansSub}</div>
           </div>
         </div>
-
-        {onSelectSample && (
-          <div style={{ marginTop: 8 }}>
-            <SampleGallery onSelectSample={onSelectSample} />
-          </div>
-        )}
       </div>
     </motion.div>
   );

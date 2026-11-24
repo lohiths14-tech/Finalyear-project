@@ -4,7 +4,6 @@ import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronD
 import SkeletonCard from '../ui/SkeletonCard';
 import apiClient from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
-import SampleGallery from '../ui/SampleGallery';
 import LiveCameraScanner from '../ui/LiveCameraScanner';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
 import ProgressionSimulator from '../ui/ProgressionSimulator';
@@ -198,9 +197,6 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               aria-hidden="true"
             />
           </label>
-
-          {/* 1-Click Benchmark Samples */}
-          <SampleGallery onSelectSample={processFile} disabled={scanning} />
 
           {preview && (
             <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
@@ -448,7 +444,7 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               </div>
               <h3>Awaiting Leaf Scan</h3>
               <p>
-                Upload an image or choose one of the benchmark samples on the left to view instant multi-spectral diagnostic breakdown and ICAR agronomy recommendations.
+                Upload a leaf image or capture with your camera to view instant multi-spectral diagnostic breakdown and ICAR agronomy recommendations.
               </p>
             </div>
           )}

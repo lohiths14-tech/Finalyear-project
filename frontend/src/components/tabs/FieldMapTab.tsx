@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { analyzeField, analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
-import SampleGallery from '../ui/SampleGallery';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
 import ProgressionSimulator from '../ui/ProgressionSimulator';
 import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
@@ -337,7 +336,6 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
               <span>JPG, PNG, WEBP · Max 20 MB</span>
             </div>
           </div>
-          <SampleGallery onSelectSample={processFile} disabled={scanning} />
         </div>
       ) : (
         <>
