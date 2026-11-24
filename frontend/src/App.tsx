@@ -34,7 +34,7 @@ function SplashScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.4 }}
       >
-        <div className="splash-title">AgriPulse 2.0</div>
+        <div className="splash-title">AgriPulse</div>
         <div className="splash-subtitle">Field-Level Crop Disease Intelligence Platform</div>
       </motion.div>
       <motion.div
@@ -69,7 +69,7 @@ function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin, onGuest }: LoginScr
             <Leaf size={26} color="#ffffff" strokeWidth={2.5} />
           </div>
           <div>
-            <div className="login-title">AgriPulse 2.0</div>
+            <div className="login-title">AgriPulse</div>
             <div className="login-subtitle">Enter your API key or continue as Guest</div>
           </div>
         </div>
@@ -124,7 +124,7 @@ const TAB_TITLES: Record<string, { title: string; subtitle: string }> = {
 let toastIdCounter = 0;
 
 function App() {
-  const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
+  const [viewMode, setViewMode] = useState<'landing' | 'app'>('app');
   const [activeTab, setActiveTab] = useState('field');
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
@@ -138,11 +138,16 @@ function App() {
   const [qrOpen, setQrOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('agripulse-theme');
-    return saved === 'dark';
+    return saved ? saved === 'dark' : true;
   });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     localStorage.setItem('agripulse-theme', isDark ? 'dark' : 'light');
   }, [isDark]);
 

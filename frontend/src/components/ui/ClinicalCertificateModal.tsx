@@ -72,7 +72,7 @@ export const ClinicalCertificateModal: React.FC<ClinicalCertificateModalProps> =
                 <div>
                   <div className="text-2xl font-black tracking-tight text-emerald-800 flex items-center gap-2">
                     <ShieldCheck className="text-emerald-600" size={28} />
-                    AgriPulse 2.0 Enterprise
+                    AgriPulse Pathology Registry
                   </div>
                   <div className="text-xs text-slate-500 uppercase tracking-widest font-semibold mt-0.5">
                     Field-Level Crop Disease Intelligence &amp; Pathology Registry

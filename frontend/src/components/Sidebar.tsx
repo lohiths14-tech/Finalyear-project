@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-white tracking-tight">AgriPulse</span>
                 <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full font-mono">
-                  v2.0
+                  AI
                 </span>
               </div>
               <span className="text-[11px] text-slate-400 flex items-center gap-1 group-hover:text-emerald-400 transition-colors">

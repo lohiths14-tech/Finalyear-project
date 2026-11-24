@@ -1,5 +1,5 @@
 /**
- * AgriPulse 2.0 — WeatherWidget
+ * AgriPulse — WeatherWidget
  *
  * Displays real-time weather, location, and pest risk data
  * fetched from the backend /api/v1/environment endpoint.

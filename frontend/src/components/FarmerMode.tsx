@@ -213,7 +213,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
   const handleShareWhatsApp = useCallback(() => {
     if (!result || !dosageCalculations) return;
     const info = dosageCalculations.diseaseInfo;
-    const text = `🌾 *AgriPulse 2.0 Crop Health Report*\n` +
+    const text = `🌾 *AgriPulse Crop Health Report*\n` +
       `📌 *Diagnosis:* ${info.name}\n` +
       `📊 *Severity:* ${result.severity.toFixed(1)}% | *Confidence:* ${result.confidence.toFixed(0)}%\n` +
       `💧 *Land Size:* ${landArea} ${landUnit} (${dosageCalculations.acres} acres)\n` +
@@ -231,7 +231,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
     <div className="farmer-app-viewport" style={{ maxWidth: 520, margin: '0 auto', padding: '20px 16px' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, background: 'var(--bg-card)', padding: '12px 18px', borderRadius: 12, border: '1px solid var(--border)' }}>
         <div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>AgriPulse 2.0</h1>
+          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>AgriPulse</h1>
           <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Farmer Mode · ರೈತ ಸೇವೆ
           </div>

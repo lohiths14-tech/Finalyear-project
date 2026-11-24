@@ -235,6 +235,19 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
     await processFile(file);
   }, [processFile]);
 
+  const handleLoadDemo = useCallback(async () => {
+    try {
+      setScanning(true);
+      const res = await fetch('/samples/sample_blast.jpg');
+      const blob = await res.blob();
+      const file = new File([blob], 'rice_blast_benchmark.jpg', { type: 'image/jpeg' });
+      await processFile(file);
+    } catch (e) {
+      console.error('Failed to load demo sample:', e);
+      setScanning(false);
+    }
+  }, [processFile]);
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -293,6 +306,16 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
               </button>
             </>
           )}
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={handleLoadDemo}
+            disabled={scanning || backendOnline === false}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)' }}
+            title="Load verified Paddy Doctor Drone Benchmark"
+          >
+            <Sparkles size={15} /> Load Demo Scan
+          </button>
           <label 
             className={`btn-primary ${scanning || backendOnline === false ? 'btn-disabled' : ''}`} 
             style={{ cursor: scanning || backendOnline === false ? 'not-allowed' : 'pointer' }}
@@ -321,20 +344,46 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div
             className={`empty-state ${dragOver ? 'drag-over' : ''}`}
-            style={{ cursor: 'pointer' }}
+            style={{ padding: '48px 24px', textAlign: 'center', cursor: 'pointer' }}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
           >
-            <div className="empty-state-icon-wrapper">
-              <MapIcon size={32} color="var(--primary)" />
+            <div className="empty-state-icon-wrapper" style={{ margin: '0 auto 16px' }}>
+              <MapIcon size={36} color="var(--primary)" />
             </div>
-            <h3>No Field Scan Loaded</h3>
-            <p>Drop a field image here or click to upload.<br/>Supports drone images, satellite crops, and smartphone photos.</p>
-            <div style={{ marginTop: 16, display: 'flex', gap: 8, alignItems: 'center', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              <Upload size={13} />
-              <span>JPG, PNG, WEBP · Max 20 MB</span>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px 0' }}>Ready for Field-Level Spatial Diagnostics</h3>
+            <p style={{ maxWidth: 520, margin: '0 auto 20px', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+              Upload high-altitude drone orthomosaics, satellite crops, or field photographs — or instantly examine our verified benchmark scan.
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <label 
+                className={`btn-primary ${scanning || backendOnline === false ? 'btn-disabled' : ''}`} 
+                style={{ cursor: scanning || backendOnline === false ? 'not-allowed' : 'pointer' }}
+              >
+                <Upload size={16} /> Choose Field Image
+                <input 
+                  type="file" 
+                  hidden 
+                  accept="image/*" 
+                  disabled={scanning || backendOnline === false} 
+                  onChange={handleUpload} 
+                />
+              </label>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={handleLoadDemo}
+                disabled={scanning || backendOnline === false}
+                style={{ padding: '8px 18px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+              >
+                <Sparkles size={16} /> Load Verified Drone Benchmark
+              </button>
+            </div>
+            <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+              <span>✓ 64-Patch Adaptive Grid</span>
+              <span>✓ Moran&apos;s I Autocorrelation</span>
+              <span>✓ ICAR Treatment Rules</span>
             </div>
           </div>
         </div>

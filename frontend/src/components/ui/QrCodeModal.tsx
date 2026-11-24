@@ -62,7 +62,7 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({ isOpen, onClose }) => 
             <div className="relative p-3 bg-white rounded-xl border border-slate-200 shadow-inner w-56 h-56 mx-auto mb-4 flex items-center justify-center">
               <img
                 src="/project_qr.png"
-                alt="AgriPulse 2.0 Live QR Code"
+                alt="AgriPulse Live QR Code"
                 className="w-full h-full object-contain"
               />
             </div>

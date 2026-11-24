@@ -117,6 +117,19 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
     e.target.value = '';
   }, [processFile]);
 
+  const handleLoadDemo = useCallback(async () => {
+    try {
+      setScanning(true);
+      const res = await fetch('/samples/sample_blast.jpg');
+      const blob = await res.blob();
+      const file = new File([blob], 'rice_blast_leaf.jpg', { type: 'image/jpeg' });
+      await processFile(file);
+    } catch (e) {
+      console.error('Failed to load demo leaf:', e);
+      setScanning(false);
+    }
+  }, [processFile]);
+
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -143,6 +156,16 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
               <FlaskConical size={20} color="var(--primary)" /> Leaf Micro-Diagnostic
             </h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={handleLoadDemo}
+                disabled={scanning}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)' }}
+                title="Load verified leaf pathology sample"
+              >
+                <Sparkles size={14} /> Demo Leaf
+              </button>
               <button
                 type="button"
                 className="btn-icon"
@@ -484,14 +507,37 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
           )}
 
           {!scanning && !result && (
-            <div className="card empty-state" style={{ background: 'var(--bg-card)', minHeight: 440 }}>
-              <div className="empty-state-icon-wrapper">
-                <FlaskConical size={32} color="var(--primary)" />
+            <div className="card empty-state" style={{ background: 'var(--bg-card)', minHeight: 440, padding: 36, textAlign: 'center' }}>
+              <div className="empty-state-icon-wrapper" style={{ margin: '0 auto 16px' }}>
+                <FlaskConical size={36} color="var(--primary)" />
               </div>
-              <h3>Awaiting Leaf Scan</h3>
-              <p>
-                Upload a leaf image or capture with your camera to view instant multi-spectral diagnostic breakdown and ICAR agronomy recommendations.
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 8px 0' }}>Awaiting Leaf Scan</h3>
+              <p style={{ maxWidth: 460, margin: '0 auto 20px', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                Upload a close-up leaf photograph or capture with your live camera — or test immediately with our verified benchmark sample.
               </p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => setIsCameraOpen(true)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                >
+                  <Camera size={16} /> Open Camera
+                </button>
+                <button
+                  type="button"
+                  className="btn-icon"
+                  onClick={handleLoadDemo}
+                  style={{ padding: '8px 18px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}
+                >
+                  <Sparkles size={16} /> Load Verified Leaf Demo
+                </button>
+              </div>
+              <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                <span>✓ Calibrated Confidence</span>
+                <span>✓ Out-Of-Distribution Rejection</span>
+                <span>✓ ICAR Treatment Guidance</span>
+              </div>
             </div>
           )}
         </div>
