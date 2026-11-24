@@ -32,7 +32,7 @@ export default defineConfig({
         }
       },
     },
-    // Increase dev server body size limit for file uploads
-    hmr: { port: 5173 },
+    port: 5173,
+    host: true,
   },
 })

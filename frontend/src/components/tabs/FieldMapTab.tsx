@@ -5,7 +5,8 @@ import {
   Activity, Zap, TrendingUp,
   MapPin, Eye, Layers, CheckCircle2, Sparkles,
   Printer, Cpu, Image as ImageIcon,
-  Bot, Send, MessageSquare, ShieldCheck, Droplets, HelpCircle
+  Bot, Send, MessageSquare, ShieldCheck, Droplets, HelpCircle,
+  Award
 } from 'lucide-react';
 import { analyzeField, analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
