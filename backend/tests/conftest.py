@@ -23,14 +23,7 @@ _test_engine = create_async_engine(TEST_DB, echo=False)
 _test_session = async_sessionmaker(_test_engine, expire_on_commit=False, class_=AsyncSession)
 
 
-@pytest.fixture(scope="session")
-def event_loop():
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture
 async def setup_db():
     async with _test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -40,7 +33,7 @@ async def setup_db():
 
 
 @pytest_asyncio.fixture
-async def client() -> AsyncGenerator[AsyncClient, None]:
+async def client(setup_db) -> AsyncGenerator[AsyncClient, None]:
     async def _override_get_db():
         async with _test_session() as session:
             yield session

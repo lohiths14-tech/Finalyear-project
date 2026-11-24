@@ -300,6 +300,59 @@ def export_ensemble_onnx(
     return fp32_path, int8_path, parity_diff
 
 
+def export_mobilenet_onnx(
+    weights_path: Path | None,
+    output_dir: Path,
+    num_classes: int = 10,
+) -> tuple[str, str, float]:
+    """Export and quantize MobileNetV2 Vision Student classifier."""
+    import torchvision.models as models
+
+    model = models.mobilenet_v2(num_classes=num_classes)
+    if weights_path and weights_path.exists():
+        state = torch.load(weights_path, map_location="cpu", weights_only=False)
+        model.load_state_dict(state)
+        logger.info("Loaded trained weights for MobileNetV2 from %s", weights_path)
+    model.eval()
+
+    dummy_img = torch.randn(1, 3, 224, 224, dtype=torch.float32)
+    fp32_path = str(output_dir / "mobilenet_v2.onnx")
+    int8_path = str(output_dir / "mobilenet_v2_quant.onnx")
+
+    export_kwargs = {
+        "export_params": True,
+        "opset_version": 14,
+        "do_constant_folding": True,
+        "input_names": ["image"],
+        "output_names": ["logits"],
+        "dynamic_axes": {
+            "image": {0: "batch_size"},
+            "logits": {0: "batch_size"},
+        },
+    }
+
+    try:
+        torch.onnx.export(model, dummy_img, fp32_path, dynamo=False, **export_kwargs)
+    except TypeError:
+        torch.onnx.export(model, dummy_img, fp32_path, **export_kwargs)
+
+    quantize_model(fp32_path, int8_path)
+
+    parity_diff = 0.0
+    try:
+        import onnxruntime as ort
+
+        session = ort.InferenceSession(fp32_path, providers=["CPUExecutionProvider"])
+        with torch.no_grad():
+            torch_out = model(dummy_img).numpy()
+        ort_out = session.run(None, {"image": dummy_img.numpy()})[0]
+        parity_diff = float(np.max(np.abs(torch_out - ort_out)))
+    except Exception as e:
+        logger.warning("MobileNetV2 parity check failed: %s", e)
+
+    return fp32_path, int8_path, parity_diff
+
+
 def benchmark_session(session_path: str, dummy_inputs: dict[str, np.ndarray], n_runs: int = 100) -> dict[str, float]:
     """Evaluates p50, p95, p99 latency in milliseconds."""
     import onnxruntime as ort
@@ -406,7 +459,7 @@ def main():
     print(f"  ✅ INT8: {Path(tm_int8).name} ({tm_int8_size:.1f} KB)")
 
     # 4. Ensemble
-    print("\n[4/4] Exporting AgriVisionEnsemble...")
+    print("\n[4/5] Exporting AgriVisionEnsemble...")
     en_fp32, en_int8, en_diff = export_ensemble_onnx(
         resolve_weight("ensemble"), output_dir, num_classes=num_classes
     )
@@ -414,6 +467,17 @@ def main():
     en_int8_size = Path(en_int8).stat().st_size / 1024 if Path(en_int8).exists() else 0
     print(f"  ✅ FP32: {Path(en_fp32).name} ({en_fp32_size:.1f} KB) | Parity Δ: {en_diff:.2e}")
     print(f"  ✅ INT8: {Path(en_int8).name} ({en_int8_size:.1f} KB)")
+
+    # 5. MobileNetV2 Vision Student
+    print("\n[5/5] Exporting MobileNetV2 Vision Student...")
+    mb_weight = resolve_weight("mobilenet_v2_paddy") or (REPO_ROOT / "model_weights" / "mobilenet_v2_paddy.pt")
+    mb_fp32, mb_int8, mb_diff = export_mobilenet_onnx(
+        mb_weight, output_dir, num_classes=10
+    )
+    mb_fp32_size = Path(mb_fp32).stat().st_size / 1024
+    mb_int8_size = Path(mb_int8).stat().st_size / 1024 if Path(mb_int8).exists() else 0
+    print(f"  ✅ FP32: {Path(mb_fp32).name} ({mb_fp32_size:.1f} KB) | Parity Δ: {mb_diff:.2e}")
+    print(f"  ✅ INT8: {Path(mb_int8).name} ({mb_int8_size:.1f} KB)")
 
     if args.benchmark:
         print("\n" + "=" * 70)
@@ -437,8 +501,15 @@ def main():
         print(f"  Ensemble FP32    -> p50: {bench_en_fp32['p50_ms']}ms | p95: {bench_en_fp32['p95_ms']}ms")
         print(f"  Ensemble INT8    -> p50: {bench_en_int8['p50_ms']}ms | p95: {bench_en_int8['p95_ms']}ms")
 
+        # MobileNet
+        d_mb = {"image": np.random.randn(1, 3, 224, 224).astype(np.float32)}
+        bench_mb_fp32 = benchmark_session(mb_fp32, d_mb)
+        bench_mb_int8 = benchmark_session(mb_int8, d_mb)
+        print(f"  MobileNet FP32   -> p50: {bench_mb_fp32['p50_ms']}ms | p95: {bench_mb_fp32['p95_ms']}ms")
+        print(f"  MobileNet INT8   -> p50: {bench_mb_int8['p50_ms']}ms | p95: {bench_mb_int8['p95_ms']}ms")
+
     print("\n" + "=" * 70)
-    print("  🎉 All 4 models exported and INT8-quantized successfully!")
+    print("  🎉 All 5 models exported and INT8-quantized successfully!")
     print("=" * 70 + "\n")
 
 

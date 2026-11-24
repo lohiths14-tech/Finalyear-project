@@ -153,6 +153,7 @@ class InferenceService:
                 "spatial": ["spatial_net_quant.onnx", "spatial_net.onnx"],
                 "temporal": ["temporal_net_quant.onnx", "temporal_net.onnx"],
                 "ensemble": ["ensemble_quant.onnx", "ensemble.onnx"],
+                "vision_student": ["mobilenet_v2_quant.onnx", "mobilenet_v2.onnx"],
             }
 
             for key, filenames in candidates.items():

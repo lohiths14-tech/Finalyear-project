@@ -66,3 +66,42 @@ class TestMobileExport:
         assert severity.shape == (4, 1)
         assert not torch.isnan(logits).any()
         assert not torch.isnan(severity).any()
+
+    def test_onnx_mobilenet_quant_forward(self):
+        """Verifies MobileNetV2 INT8 quantized ONNX forward pass."""
+        import onnxruntime as ort
+        import numpy as np
+
+        onnx_path = Path(__file__).resolve().parent.parent / "model_weights" / "onnx" / "mobilenet_v2_quant.onnx"
+        if not onnx_path.exists():
+            pytest.skip("mobilenet_v2_quant.onnx not found")
+
+        opts = ort.SessionOptions()
+        opts.intra_op_num_threads = 1
+        session = ort.InferenceSession(str(onnx_path), opts, providers=["CPUExecutionProvider"])
+
+        dummy_img = np.random.randn(1, 3, 224, 224).astype(np.float32)
+        logits = session.run(None, {"image": dummy_img})[0]
+
+        assert logits.shape == (1, 10), f"Expected (1, 10), got {logits.shape}"
+        assert not np.isnan(logits).any(), "ONNX MobileNet output contains NaNs"
+        assert not np.isinf(logits).any(), "ONNX MobileNet output contains Infs"
+
+    def test_onnx_quantized_footprint(self):
+        """Ensures all quantized ONNX checkpoints are memory-efficient (< 3 MB each)."""
+        onnx_dir = Path(__file__).resolve().parent.parent / "model_weights" / "onnx"
+        if not onnx_dir.exists():
+            pytest.skip("ONNX directory not found")
+
+        expected = [
+            "spectral_net_quant.onnx",
+            "spatial_net_quant.onnx",
+            "temporal_net_quant.onnx",
+            "ensemble_quant.onnx",
+            "mobilenet_v2_quant.onnx",
+        ]
+        for name in expected:
+            f = onnx_dir / name
+            if f.exists():
+                size_mb = f.stat().st_size / (1024 * 1024)
+                assert size_mb < 3.0, f"{name} exceeds 3 MB limit: {size_mb:.2f} MB"
