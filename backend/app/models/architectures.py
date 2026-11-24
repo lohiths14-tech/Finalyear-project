@@ -22,8 +22,10 @@ architectures for production inference. See docs/ARCHITECTURE_DISTILLATION.md
 for the mapping protocol.
 """
 
+import logging
 import math
-from typing import Optional, Tuple
+from pathlib import Path
+from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -165,21 +167,16 @@ class FoundationVisionEncoder(nn.Module):
     pipeline's spectral feature space alignment.
     """
 
-    def __init__(self, feature_dim: int = 64, pretrained: bool = False):
+    def __init__(
+        self,
+        feature_dim: int = 64,
+        pretrained: bool = False,
+        weights_path: Optional[Union[str, Path]] = None,
+    ):
         super().__init__()
+        self.weights_path = weights_path
         if pretrained:
-            try:
-                self.encoder = torch.hub.load(
-                    "facebookresearch/dinov2",
-                    "dinov2_vits14",
-                    pretrained=True,
-                    trust_repo=True,
-                )
-            except Exception:
-                self.encoder = nn.Sequential(
-                    nn.Conv2d(3, 384, kernel_size=14, stride=14),
-                    nn.Flatten(2),
-                )
+            self.encoder = self._load_encoder(weights_path)
         else:
             # Fast offline ViT representation
             self.encoder = nn.Sequential(
@@ -193,6 +190,64 @@ class FoundationVisionEncoder(nn.Module):
             nn.Dropout(0.1),
             nn.Linear(256, feature_dim),
             nn.LayerNorm(feature_dim),
+        )
+
+    def _load_encoder(
+        self, weights_path: Optional[Union[str, Path]] = None
+    ) -> nn.Module:
+        logger = logging.getLogger(__name__)
+        candidates = []
+        if weights_path:
+            candidates.append(Path(weights_path))
+        candidates.extend(
+            [
+                Path("backend/model_weights/dinov2_vits14_pretrain.pth"),
+                Path("model_weights/dinov2_vits14_pretrain.pth"),
+                Path(__file__).resolve().parent.parent.parent
+                / "model_weights"
+                / "dinov2_vits14_pretrain.pth",
+            ]
+        )
+
+        for cand in candidates:
+            if cand.exists() and cand.is_file():
+                try:
+                    logger.info(
+                        "Found local DINOv2 weights at %s; loading offline model...",
+                        cand,
+                    )
+                    model = torch.hub.load(
+                        "facebookresearch/dinov2",
+                        "dinov2_vits14",
+                        pretrained=False,
+                        trust_repo=True,
+                    )
+                    state = torch.load(cand, map_location="cpu", weights_only=True)
+                    model.load_state_dict(state)
+                    return model
+                except Exception as e:
+                    logger.warning(
+                        "Failed to load local DINOv2 weights from %s: %s",
+                        cand,
+                        e,
+                    )
+
+        try:
+            return torch.hub.load(
+                "facebookresearch/dinov2",
+                "dinov2_vits14",
+                pretrained=True,
+                trust_repo=True,
+            )
+        except Exception as e:
+            logger.warning(
+                "Online DINOv2 load failed (%s). Falling back to offline architectural proxy.",
+                e,
+            )
+
+        return nn.Sequential(
+            nn.Conv2d(3, 384, kernel_size=14, stride=14),
+            nn.Flatten(2),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

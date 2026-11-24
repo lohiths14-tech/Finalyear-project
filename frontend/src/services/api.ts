@@ -93,6 +93,88 @@ export const analyzeField = async (formData: FormData): Promise<FieldResult> => 
   }
 };
 
+export interface FieldStreamProgress {
+  stage: string;
+  percent: number;
+  message: string;
+}
+
+export const analyzeFieldStream = async (
+  formData: FormData,
+  onProgress?: (progress: FieldStreamProgress) => void
+): Promise<FieldResult> => {
+  const url = `${API_BASE_URL}/analyze/field/stream`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMsg = `Server error (${response.status})`;
+      try {
+        const json = JSON.parse(errorText);
+        errorMsg = json.detail || json.message || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let finalResult: FieldResult | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      let currentEvent = 'message';
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        if (trimmed.startsWith('event:')) {
+          currentEvent = trimmed.slice(6).trim();
+        } else if (trimmed.startsWith('data:')) {
+          const dataStr = trimmed.slice(5).trim();
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (currentEvent === 'progress') {
+              if (onProgress) {
+                onProgress(parsed);
+              }
+            } else if (currentEvent === 'complete') {
+              finalResult = parsed as FieldResult;
+            } else if (currentEvent === 'error') {
+              throw new Error(parsed.error || 'Inference error');
+            }
+          } catch (e: any) {
+            if (currentEvent === 'error') throw e;
+          }
+        }
+      }
+    }
+
+    if (finalResult) {
+      return finalResult;
+    }
+
+    // Fallback if stream ended without explicit complete event:
+    return await analyzeField(formData);
+  } catch (err) {
+    console.warn('[SSE Stream] Stream fallback to standard POST /analyze/field:', err);
+    return await analyzeField(formData);
+  }
+};
+
 export const getHistory = async (): Promise<ScanHistoryItem[]> => {
   const response = await apiClient.get<ScanHistoryItem[]>('/history');
   return response.data;

@@ -7,7 +7,7 @@ import {
   Printer, Cpu, Image as ImageIcon,
   Bot, Send, MessageSquare, ShieldCheck, Droplets, HelpCircle
 } from 'lucide-react';
-import { analyzeField, consultField, getAiStatus } from '../../services/api';
+import { analyzeField, analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
 import SampleGallery from '../ui/SampleGallery';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
@@ -26,25 +26,36 @@ const INFERENCE_STAGES = [
   { label: 'Generating ICAR recommendations…',     pct: 96, icon: CheckCircle2 },
 ];
 
-function InferenceProgress({ imageUrl }: { imageUrl: string | null }) {
+function InferenceProgress({
+  imageUrl,
+  streamProgress,
+}: {
+  imageUrl: string | null;
+  streamProgress: FieldStreamProgress | null;
+}) {
   const [stageIdx, setStageIdx] = useState(0);
-  const [progress, setProgress] = useState(4);
+  const [simulatedProgress, setSimulatedProgress] = useState(4);
+
+  // If live SSE telemetry is streaming, use it; otherwise fallback to realistic timer
+  const livePct = streamProgress?.percent ?? null;
+  const liveMessage = streamProgress?.message ?? null;
+  const displayProgress = livePct !== null ? livePct : simulatedProgress;
 
   useEffect(() => {
-    // Advance stages realistically every ~15s (total ~2min 30sec)
+    if (streamProgress) return;
     const timings = [3000, 12000, 18000, 14000, 12000, 10000, 8000];
     let idx = 0;
     const advance = () => {
       if (idx >= INFERENCE_STAGES.length - 1) return;
       idx++;
       setStageIdx(idx);
-      setProgress(INFERENCE_STAGES[idx].pct);
+      setSimulatedProgress(INFERENCE_STAGES[idx].pct);
       setTimeout(advance, timings[idx] || 10000);
     };
     const t = setTimeout(advance, timings[0]);
-    setProgress(INFERENCE_STAGES[0].pct);
+    setSimulatedProgress(INFERENCE_STAGES[0].pct);
     return () => clearTimeout(t);
-  }, []);
+  }, [streamProgress]);
 
   const stage = INFERENCE_STAGES[stageIdx];
   const StageIcon = stage.icon;
@@ -62,16 +73,20 @@ function InferenceProgress({ imageUrl }: { imageUrl: string | null }) {
       )}
       <div className="inference-spinner" />
       <div>
-        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>AgriPulse AI Analysis Running</div>
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>DINOv2 + Adaptive Grid on CPU — typically 2–3 minutes</div>
+        <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
+          {streamProgress ? 'AgriPulse Live Stream Active' : 'AgriPulse AI Analysis Running'}
+        </div>
+        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          {streamProgress ? 'Receiving real-time SSE patch telemetry from server' : 'DINOv2 + Adaptive Grid on CPU — typically 2–3 minutes'}
+        </div>
       </div>
       <div className="inference-progress-bar-track" style={{ width: '100%', maxWidth: 480 }}>
-        <div className="inference-progress-bar-fill" style={{ width: `${progress}%` }} />
+        <div className="inference-progress-bar-fill" style={{ width: `${displayProgress}%` }} />
       </div>
       <div className="inference-stage-label">
         <StageIcon size={14} color="var(--primary)" />
-        <span>{stage.label}</span>
-        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)', fontSize: '0.78rem' }}>{progress}%</span>
+        <span>{liveMessage || stage.label}</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)', fontSize: '0.78rem' }}>{displayProgress}%</span>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
         {INFERENCE_STAGES.map((_, i) => (
@@ -79,7 +94,7 @@ function InferenceProgress({ imageUrl }: { imageUrl: string | null }) {
             key={i}
             style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: i <= stageIdx ? 'var(--primary)' : 'var(--border)',
+              background: i <= (livePct ? Math.floor((livePct / 100) * INFERENCE_STAGES.length) : stageIdx) ? 'var(--primary)' : 'var(--border)',
               transition: 'background 0.4s ease',
             }}
           />
@@ -106,6 +121,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   const [viewMode, setViewMode] = useState<'ai_overlay' | 'heatmap' | 'image'>('ai_overlay');
   const [dragOver, setDragOver] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
+  const [streamProgress, setStreamProgress] = useState<FieldStreamProgress | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Field Intelligence Decision Engine State ──
@@ -174,6 +190,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
       return;
     }
     setScanning(true);
+    setStreamProgress(null);
     setLocalResults(null);
     setSelectedCell(null);
     setHoveredCell(null);
@@ -187,7 +204,9 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
       const fd = new FormData();
       fd.append('file', optimizedFile);
 
-      const data = await analyzeField(fd);
+      const data = await analyzeFieldStream(fd, (prog) => {
+        setStreamProgress(prog);
+      });
       setLocalResults(data);
       if (data.grid_data?.length) setSelectedCell(data.grid_data[0]);
       if (onScanComplete) onScanComplete(data);
@@ -295,7 +314,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
       </div>
 
       {scanning ? (
-        <InferenceProgress imageUrl={imageUrl} />
+        <InferenceProgress imageUrl={imageUrl} streamProgress={streamProgress} />
       ) : !localResults ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div

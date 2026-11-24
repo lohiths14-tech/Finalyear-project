@@ -126,7 +126,64 @@ class InferenceService:
                 "Run scripts/train_paddy_doctor.py to produce predictions."
             )
 
+        # Initialize ONNX Runtime sessions (preferring dynamic INT8 quantized)
+        self.ort_sessions: dict[str, Any] = {}
+        self.use_onnx = False
+        self._init_onnx_sessions()
+
         self._set_eval()
+
+    def _init_onnx_sessions(self):
+        """Loads ONNX Runtime sessions (INT8 quantized preferred) for minimal memory footprint."""
+        try:
+            import onnxruntime as ort
+
+            onnx_dir = settings.resolve_model_base_dir() / "onnx"
+            if not onnx_dir.exists():
+                return
+
+            opts = ort.SessionOptions()
+            opts.intra_op_num_threads = 1
+            opts.graph_optimization_level = (
+                ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            )
+
+            candidates = {
+                "spectral": ["spectral_net_quant.onnx", "spectral_net.onnx"],
+                "spatial": ["spatial_net_quant.onnx", "spatial_net.onnx"],
+                "temporal": ["temporal_net_quant.onnx", "temporal_net.onnx"],
+                "ensemble": ["ensemble_quant.onnx", "ensemble.onnx"],
+            }
+
+            for key, filenames in candidates.items():
+                for fname in filenames:
+                    fpath = onnx_dir / fname
+                    if fpath.exists():
+                        try:
+                            self.ort_sessions[key] = ort.InferenceSession(
+                                str(fpath),
+                                opts,
+                                providers=["CPUExecutionProvider"],
+                            )
+                            logging.getLogger(__name__).info(
+                                "Loaded ONNX session for %s (%s)", key, fname
+                            )
+                            break
+                        except Exception as e:
+                            logging.getLogger(__name__).warning(
+                                "Failed to initialize ONNX %s: %s", fpath, e
+                            )
+
+            if self.ort_sessions:
+                self.use_onnx = True
+                logging.getLogger(__name__).info(
+                    "ONNX Runtime acceleration active: %s",
+                    list(self.ort_sessions.keys()),
+                )
+        except Exception as e:
+            logging.getLogger(__name__).warning(
+                "ONNX initialization skipped: %s", e
+            )
 
     def _load_weights(self, model_paths: dict[str, str]):
         """Safely load serialized weights with map_location."""
@@ -198,46 +255,61 @@ class InferenceService:
                 # Spectral analysis (NGVC)
                 ngvc = self.processor.extract_ngvc(region, bins=128)
                 ngvc_accumulator += ngvc
-                ngvc_tensor = torch.FloatTensor(
-                    ngvc).unsqueeze(0).to(self.device)
 
-                with torch.no_grad():
-                    feat = self.spectral_net(ngvc_tensor)
-                    node_features.append(feat)
-                    regions.append(
-                        {
-                            "grid_r": r_idx,
-                            "grid_c": c_idx,
-                            "x": x,
-                            "y": y,
-                            "w": pw,
-                            "h": ph,
-                            "veg_pixels": veg_pixels,
-                        }
-                    )
+                if "spectral" in self.ort_sessions:
+                    ngvc_np = ngvc.reshape(1, -1).astype(np.float32)
+                    feat_np = self.ort_sessions["spectral"].run(
+                        None, {"spectral_hist": ngvc_np}
+                    )[0]
+                    feat = torch.from_numpy(feat_np).to(self.device)
+                else:
+                    ngvc_tensor = torch.FloatTensor(
+                        ngvc).unsqueeze(0).to(self.device)
+                    with torch.no_grad():
+                        feat = self.spectral_net(ngvc_tensor)
+
+                node_features.append(feat)
+                regions.append(
+                    {
+                        "grid_r": r_idx,
+                        "grid_c": c_idx,
+                        "x": x,
+                        "y": y,
+                        "w": pw,
+                        "h": ph,
+                        "veg_pixels": veg_pixels,
+                    }
+                )
 
         # Fallback: if all patches were skipped, take the full image as 1 patch
         if not node_features and h > 0 and w > 0:
             ngvc = self.processor.extract_ngvc(processed_img, bins=128)
             ngvc_accumulator = ngvc.copy()
-            ngvc_tensor = torch.FloatTensor(ngvc).unsqueeze(0).to(self.device)
-            with torch.no_grad():
-                feat = self.spectral_net(ngvc_tensor)
-                node_features.append(feat)
-                veg_px = (
-                    int((mask > 0).sum()) if mask.size > 0 else (h * w)
-                )
-                regions.append(
-                    {
-                        "grid_r": 0,
-                        "grid_c": 0,
-                        "x": 0,
-                        "y": 0,
-                        "w": w,
-                        "h": h,
-                        "veg_pixels": veg_px,
-                    }
-                )
+            if "spectral" in self.ort_sessions:
+                ngvc_np = ngvc.reshape(1, -1).astype(np.float32)
+                feat_np = self.ort_sessions["spectral"].run(
+                    None, {"spectral_hist": ngvc_np}
+                )[0]
+                feat = torch.from_numpy(feat_np).to(self.device)
+            else:
+                ngvc_tensor = torch.FloatTensor(ngvc).unsqueeze(0).to(self.device)
+                with torch.no_grad():
+                    feat = self.spectral_net(ngvc_tensor)
+            node_features.append(feat)
+            veg_px = (
+                int((mask > 0).sum()) if mask.size > 0 else (h * w)
+            )
+            regions.append(
+                {
+                    "grid_r": 0,
+                    "grid_c": 0,
+                    "x": 0,
+                    "y": 0,
+                    "w": w,
+                    "h": h,
+                    "veg_pixels": veg_px,
+                }
+            )
 
         return (
             regions,
@@ -255,7 +327,7 @@ class InferenceService:
             num_nodes) -> tuple:
         """Applies temporal analysis ONLY when sequence is available."""
         if (
-            "temporal" in self.loaded_models
+            ("temporal" in self.loaded_models or "temporal" in self.ort_sessions)
             and temporal_sequence
             and len(temporal_sequence) > 1
         ):
@@ -263,13 +335,26 @@ class InferenceService:
             for frame in temporal_sequence[-5:]:  # Last 5 frames
                 f_proc, _ = self.processor.remove_soil_and_shadow(frame)
                 f_ngvc = self.processor.extract_ngvc(f_proc, bins=128)
-                f_t = torch.FloatTensor(f_ngvc).unsqueeze(0).to(self.device)
-                with torch.no_grad():
-                    seq_feats.append(self.spectral_net(f_t))
+                if "spectral" in self.ort_sessions:
+                    f_np = f_ngvc.reshape(1, -1).astype(np.float32)
+                    feat_np = self.ort_sessions["spectral"].run(
+                        None, {"spectral_hist": f_np}
+                    )[0]
+                    seq_feats.append(torch.from_numpy(feat_np).to(self.device))
+                else:
+                    f_t = torch.FloatTensor(f_ngvc).unsqueeze(0).to(self.device)
+                    with torch.no_grad():
+                        seq_feats.append(self.spectral_net(f_t))
 
             # Stack sequence: (1, seq_len, 64) -> broadcast to (N, seq_len, 64)
             seq_tensor = torch.stack(seq_feats, dim=1)
             temporal_input = seq_tensor.expand(num_nodes, -1, -1)
+            if "temporal" in self.ort_sessions:
+                temp_np = self.ort_sessions["temporal"].run(
+                    None, {"temporal_sequence": temporal_input.cpu().numpy()}
+                )[0]
+                return torch.from_numpy(temp_np).to(self.device), True
+
             with torch.no_grad():
                 return self.temporal_net(temporal_input), True
 
@@ -283,12 +368,26 @@ class InferenceService:
         self,
         image: np.ndarray,
         temporal_sequence: list[np.ndarray] | None = None,
+        progress_callback: Any | None = None,
     ) -> dict[str, Any]:
         """Full Spatio-Spectral-Temporal field pipeline."""
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "preprocess",
+                "percent": 12,
+                "message": "Segmenting canopy vegetation and filtering soil background"
+            })
         h, w, _ = image.shape
 
         # 1. Preprocess
         processed_img, mask = self.processor.remove_soil_and_shadow(image)
+
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "spectral",
+                "percent": 30,
+                "message": "Initializing adaptive grid & extracting spectral NGVC signatures"
+            })
 
         # 2 & 3. Grid segmentation & Spectral analysis
         (
@@ -317,6 +416,13 @@ class InferenceService:
         node_features_t = torch.cat(node_features, dim=0)  # (N, 64)
         num_nodes = len(regions)
 
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "spatial",
+                "percent": 65,
+                "message": f"GraphSAGE spatial aggregation over {num_nodes} patch adjacency graph"
+            })
+
         # 4. Spatial analysis — O(N) vectorized adjacency
         positions = np.array(
             [[r["x"], r["y"]] for r in regions], dtype=np.float32
@@ -325,7 +431,16 @@ class InferenceService:
         adj_np = (dist_matrix < patch_size * 2.0).astype(np.float32)
         np.fill_diagonal(adj_np, 0.0)  # No self-loops
 
-        if "spatial" in self.loaded_models:
+        if "spatial" in self.ort_sessions:
+            spatial_feats_np = self.ort_sessions["spatial"].run(
+                None,
+                {
+                    "node_features": node_features_t.cpu().numpy(),
+                    "adjacency_matrix": adj_np,
+                },
+            )[0]
+            spatial_feats = torch.from_numpy(spatial_feats_np).to(self.device)
+        elif "spatial" in self.loaded_models:
             adj = torch.tensor(adj_np, dtype=torch.float32).to(self.device)
             with torch.no_grad():
                 spatial_feats = self.spatial_net(
@@ -336,15 +451,41 @@ class InferenceService:
             spatial_feats = torch.zeros(num_nodes, 64, device=self.device)
 
         # 5. Temporal analysis — runs when multi-frame sequence available
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "temporal",
+                "percent": 82,
+                "message": "Assessing temporal sequence progression"
+            })
+
         temporal_feats, temporal_available = self._apply_temporal_analysis(
             temporal_sequence, spatial_feats, num_nodes
         )
 
         # 6. Meta-Learner (Ensemble)
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "ensemble",
+                "percent": 92,
+                "message": "Executing cross-modal ensemble fusion & calibrated classification"
+            })
+
         with torch.no_grad():
-            logits, severity = self.meta_learner(
-                node_features_t, spatial_feats, temporal_feats
-            )
+            if "ensemble" in self.ort_sessions:
+                logits_np, sev_np = self.ort_sessions["ensemble"].run(
+                    None,
+                    {
+                        "spectral_feat": node_features_t.cpu().numpy(),
+                        "spatial_feat": spatial_feats.cpu().numpy(),
+                        "temporal_feat": temporal_feats.cpu().numpy(),
+                    },
+                )
+                logits = torch.from_numpy(logits_np).to(self.device)
+                severity = torch.from_numpy(sev_np).to(self.device)
+            else:
+                logits, severity = self.meta_learner(
+                    node_features_t, spatial_feats, temporal_feats
+                )
             probs = torch.softmax(logits, dim=1)
             predictions = probs.mean(dim=0)
             pred_class = int(torch.argmax(predictions).item())
@@ -584,6 +725,13 @@ class InferenceService:
             )
             heatmap_base64 = None
 
+        if callable(progress_callback):
+            progress_callback({
+                "stage": "complete",
+                "percent": 100,
+                "message": "Field intelligence telemetry computed successfully"
+            })
+
         return {
             "disease_type": disease_label,
             "treatment": treatment,
@@ -624,20 +772,42 @@ class InferenceService:
         """Micro-level leaf diagnostic using spectral-only inference."""
         processed_img, mask = self.processor.remove_soil_and_shadow(image)
         ngvc = self.processor.extract_ngvc(processed_img, bins=128)
-        ngvc_tensor = torch.FloatTensor(ngvc).unsqueeze(0).to(self.device)
 
+        if "spectral" in self.ort_sessions:
+            ngvc_np = ngvc.reshape(1, -1).astype(np.float32)
+            feat_np = self.ort_sessions["spectral"].run(
+                None, {"spectral_hist": ngvc_np}
+            )[0]
+            feat = torch.from_numpy(feat_np).to(self.device)
+        else:
+            ngvc_tensor = torch.FloatTensor(ngvc).unsqueeze(0).to(self.device)
+            with torch.no_grad():
+                feat = self.spectral_net(ngvc_tensor)
+
+        v_b_size = feat.size(0)
         with torch.no_grad():
-            feat = self.spectral_net(ngvc_tensor)
-            v_b_size = feat.size(0)
-            logits, severity = self.meta_learner(
-                feat,
-                torch.zeros(
-                    v_b_size, 64, device=self.device
-                ),  # No spatial context for single leaf
-                torch.zeros(
-                    v_b_size, 64, device=self.device
-                ),  # No temporal context
-            )
+            if "ensemble" in self.ort_sessions:
+                zero_np = np.zeros((v_b_size, 64), dtype=np.float32)
+                logits_np, sev_np = self.ort_sessions["ensemble"].run(
+                    None,
+                    {
+                        "spectral_feat": feat.cpu().numpy(),
+                        "spatial_feat": zero_np,
+                        "temporal_feat": zero_np,
+                    },
+                )
+                logits = torch.from_numpy(logits_np).to(self.device)
+                severity = torch.from_numpy(sev_np).to(self.device)
+            else:
+                logits, severity = self.meta_learner(
+                    feat,
+                    torch.zeros(
+                        v_b_size, 64, device=self.device
+                    ),  # No spatial context for single leaf
+                    torch.zeros(
+                        v_b_size, 64, device=self.device
+                    ),  # No temporal context
+                )
             probs = torch.softmax(logits, dim=1)
             pred_class = int(torch.argmax(probs, dim=1).item())
             confidence = float(probs.max().item() * 100)

@@ -5,6 +5,8 @@ pydantic
 pydantic-settings
 python-multipart
 python-dotenv
+sse-starlette>=2.0.0,<3.0.0
+onnx
 
 # >
 numpy

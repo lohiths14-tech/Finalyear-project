@@ -58,3 +58,14 @@ def test_file_size_limit():
     )
     # Since it's not multipart it might fail earlier, but the middleware should catch it
     assert response.status_code in (413, 422)
+
+
+def test_api_field_stream_invalid_image():
+    file_obj = io.BytesIO(b"This is not an image.")
+    response = client.post(
+        "/api/v1/analyze/field/stream",
+        files={"file": ("test.txt", file_obj, "text/plain")},
+    )
+    assert response.status_code == 400
+    assert "detail" in response.json()
+
