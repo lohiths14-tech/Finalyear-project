@@ -98,6 +98,62 @@
 }
 
 /* ══════════════════════════════════════════════════════
+   PRO-TIER MODERN CARDS & COLLAPSIBLE TELEMETRY
+══════════════════════════════════════════════════════ */
+.pro-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+
+.pro-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-hover);
+}
+
+.scientific-drawer {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 16px;
+  transition: var(--transition);
+}
+
+.scientific-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: transparent;
+  user-select: none;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+
+.scientific-drawer-header:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.scientific-drawer-content {
+  padding: 14px 16px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-base);
+}
+
+/* ══════════════════════════════════════════════════════
    RESET & BASE TYPOGRAPHY
 ══════════════════════════════════════════════════════ */
 *, *::before, *::after {

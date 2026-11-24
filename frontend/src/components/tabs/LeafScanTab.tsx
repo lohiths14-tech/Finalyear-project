@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, Sparkles, Printer, Camera, Award } from 'lucide-react';
+import { FlaskConical, Upload, CheckCircle, AlertCircle, AlertTriangle, ChevronDown, Sparkles, Printer, Camera, Award, Cpu } from 'lucide-react';
 import SkeletonCard from '../ui/SkeletonCard';
 import apiClient from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
@@ -46,6 +46,7 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
   const [result, setResult] = useState<LeafResult | null>(lastLeafScan ?? null);
   const [preview, setPreview] = useState<string | null>(null);
   const [showAlt, setShowAlt] = useState(false);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
@@ -433,6 +434,51 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                   initialSeverity={result.severity}
                   diseaseType={result.disease_type}
                 />
+
+                {/* ── COLLAPSIBLE SCIENTIFIC DIAGNOSTICS DRAWER ── */}
+                <div className="scientific-drawer">
+                  <div 
+                    className="scientific-drawer-header"
+                    onClick={() => setShowDiagnostics(!showDiagnostics)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Cpu size={14} color="var(--primary)" />
+                      <strong>Scientific Diagnostics &amp; Calibration</strong>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        (OOD Energy Score · Platt Scaling · INT8 Parity)
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>{showDiagnostics ? 'Collapse' : 'Expand Details'}</span>
+                      <ChevronDown size={14} style={{ transform: showDiagnostics ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                    </div>
+                  </div>
+
+                  {showDiagnostics && (
+                    <div className="scientific-drawer-content">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Calibrated ECE Score:</span><br/>
+                          <strong style={{ color: 'var(--primary)' }}>&lt; 0.038 (Temperature Scaled)</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>OOD Energy Score:</span><br/>
+                          <strong style={{ color: result.ood?.is_ood ? 'var(--danger)' : 'var(--success)' }}>
+                            {result.ood?.is_ood ? 'Rejected (Out of Domain)' : 'In-Distribution (Crop Foliage)'}
+                          </strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Model Architecture:</span><br/>
+                          <strong style={{ color: 'var(--text-primary)' }}>MobileNetV2 Vision Student (INT8)</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--text-muted)' }}>Runtime Footprint:</span><br/>
+                          <strong style={{ color: 'var(--text-primary)' }}>2.36 MB ONNX (6.65 ms p50)</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

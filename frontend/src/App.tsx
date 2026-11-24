@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Leaf, Sprout, ArrowLeftRight, Sparkles, Moon, Sun, Menu, Smartphone } from 'lucide-react';
+import { Leaf, Sprout, ArrowLeftRight, Sparkles, Moon, Sun, Menu, Smartphone, Home } from 'lucide-react';
+import LandingPage from './components/LandingPage';
 import Sidebar from './components/Sidebar';
 import ToastContainer from './components/ToastContainer';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -123,6 +124,7 @@ const TAB_TITLES: Record<string, { title: string; subtitle: string }> = {
 let toastIdCounter = 0;
 
 function App() {
+  const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
   const [activeTab, setActiveTab] = useState('field');
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
@@ -216,6 +218,24 @@ function App() {
 
   if (!authChecked) return <SplashScreen />;
 
+  if (viewMode === 'landing') {
+    return (
+      <ErrorBoundary>
+        <LandingPage
+          onEnterExpert={() => {
+            setViewMode('app');
+            setIsFarmerMode(false);
+          }}
+          onEnterFarmer={() => {
+            setViewMode('app');
+            setIsFarmerMode(true);
+          }}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </ErrorBoundary>
+    );
+  }
+
   if (!apiKey) {
     return (
       <ErrorBoundary>
@@ -258,6 +278,14 @@ function App() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => setViewMode('landing')}
+                  className="mode-toggle-btn"
+                  title="Return to Landing Page"
+                >
+                  <Home size={14} />
+                  <span>Home</span>
+                </button>
                 <HealthSentinel onStatusChange={(online) => setBackendOnline(online)} />
                 <button
                   onClick={() => setQrOpen(true)}
@@ -290,6 +318,7 @@ function App() {
               backendOnline={backendOnline}
               isOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
+              onGoHome={() => setViewMode('landing')}
             />
 
             {/* Main Area */}
@@ -311,6 +340,14 @@ function App() {
                 </div>
 
                 <div className="top-nav-right">
+                  <button
+                    onClick={() => setViewMode('landing')}
+                    className="mode-toggle-btn"
+                    title="Return to Landing Page"
+                  >
+                    <Home size={14} />
+                    <span>Home</span>
+                  </button>
                   <HealthSentinel onStatusChange={(online) => setBackendOnline(online)} />
 
                   <div className="ai-badge">
