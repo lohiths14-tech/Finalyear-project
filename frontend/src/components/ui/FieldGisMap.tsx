@@ -20,9 +20,11 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
   gridData = [],
   diseaseType = 'Rice Blast',
   averageSeverity = 35.0,
-  lat = 13.9299, // Shivamogga, Karnataka (PESITM / Malnad Agricultural Zone)
-  lon = 75.5681,
+  lat: rawLat = 13.9299, // Shivamogga, Karnataka (PESITM / Malnad Agricultural Zone)
+  lon: rawLon = 75.5681,
 }) => {
+  const lat = typeof rawLat === 'number' && !isNaN(rawLat) ? rawLat : 13.9299;
+  const lon = typeof rawLon === 'number' && !isNaN(rawLon) ? rawLon : 75.5681;
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const overlayLayerRef = useRef<L.LayerGroup | null>(null);
@@ -139,7 +141,7 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     }
 
     // 3. Vector Grid Patch Markers (Hotspots)
-    if (showGridPatches && gridData.length > 0) {
+    if (showGridPatches && Array.isArray(gridData) && gridData.length > 0) {
       const southWest = L.latLng(lat - dLat, lon - dLon);
       const northEast = L.latLng(lat + dLat, lon + dLon);
       const latSpan = northEast.lat - southWest.lat;
@@ -147,17 +149,21 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
 
       // Group into high severity hotspots
       gridData
-        .filter((cell) => cell.severity > 35)
+        .filter((cell) => (cell?.severity ?? 0) > 35)
         .slice(0, 30) // Top 30 hotspot indicators
         .forEach((cell, idx) => {
-          // Normalize position within 0..1 bounding box
-          const relY = cell.y / 100.0;
-          const relX = cell.x / 100.0;
+          // Normalize position within 0..1 bounding box using x_percent / y_percent
+          const rawX = cell.x_percent ?? (cell as any).x ?? 50;
+          const rawY = cell.y_percent ?? (cell as any).y ?? 50;
+          const relX = Math.min(Math.max((Number(rawX) || 0) / 100.0, 0), 1);
+          const relY = Math.min(Math.max((Number(rawY) || 0) / 100.0, 0), 1);
 
           const cellLat = northEast.lat - relY * latSpan;
           const cellLon = southWest.lng + relX * lonSpan;
 
-          const color = cell.severity > 60 ? '#ef4444' : '#f59e0b';
+          if (isNaN(cellLat) || isNaN(cellLon)) return;
+
+          const color = (cell.severity ?? 0) > 60 ? '#ef4444' : '#f59e0b';
           const circle = L.circleMarker([cellLat, cellLon], {
             radius: 5,
             fillColor: color,
@@ -167,11 +173,12 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             fillOpacity: 0.85,
           });
 
+          const cellSev = typeof cell.severity === 'number' ? cell.severity.toFixed(1) : '0.0';
           circle.bindPopup(`
             <div style="font-family: inherit; font-size: 12px; line-height: 1.4; color: #0f172a;">
               <strong style="color: ${color};">Hotspot #${idx + 1}</strong><br/>
               <b>Pathogen:</b> ${cell.disease || diseaseType}<br/>
-              <b>Severity:</b> ${cell.severity.toFixed(1)}%<br/>
+              <b>Severity:</b> ${cellSev}%<br/>
               <b>Geo:</b> ${cellLat.toFixed(5)}°N, ${cellLon.toFixed(5)}°E
             </div>
           `);
