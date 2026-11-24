@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import NumberFlow from '@number-flow/react';
 import { TrendingDown, ShieldAlert, DollarSign, ArrowUpRight, Award } from 'lucide-react';
 
 interface EconomicImpactWidgetProps {
@@ -95,8 +96,8 @@ export const EconomicImpactWidget: React.FC<EconomicImpactWidgetProps> = ({
             </p>
           </div>
         </div>
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300">
-          Loss Risk: {stats.yieldLossPct}%
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 flex items-center gap-0.5">
+          Loss Risk: <NumberFlow value={stats.yieldLossPct} />%
         </span>
       </div>
 
@@ -104,32 +105,32 @@ export const EconomicImpactWidget: React.FC<EconomicImpactWidgetProps> = ({
         {/* Metric 1 */}
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Harvest Loss (Untreated)</span>
-          <span className="text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 block">
-            -{stats.yieldLossKg} <span className="text-xs font-normal text-slate-500">kg/acre</span>
+          <span className="text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 flex items-center">
+            -<NumberFlow value={stats.yieldLossKg} /> <span className="text-xs font-normal text-slate-500 ml-1">kg/acre</span>
           </span>
         </div>
 
         {/* Metric 2 */}
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Potential Revenue Loss</span>
-          <span className="text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 block">
-            ₹{stats.financialLossInr.toLocaleString('en-IN')}
+          <span className="text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 flex items-center">
+            ₹<NumberFlow value={stats.financialLossInr} />
           </span>
         </div>
 
         {/* Metric 3 */}
         <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
           <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Prescription Spray Cost</span>
-          <span className="text-base font-extrabold text-slate-700 dark:text-slate-300 mt-0.5 block">
-            ₹{stats.treatmentCostInr.toLocaleString('en-IN')}
+          <span className="text-base font-extrabold text-slate-700 dark:text-slate-300 mt-0.5 flex items-center">
+            ₹<NumberFlow value={stats.treatmentCostInr} />
           </span>
         </div>
 
         {/* Metric 4 */}
         <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50">
           <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block font-medium">Net Protected Profit</span>
-          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 block flex items-center">
-            ₹{stats.netSavedInr.toLocaleString('en-IN')}
+          <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center">
+            ₹<NumberFlow value={stats.netSavedInr} />
             <span className="ml-1 text-[10px] px-1 py-0.2 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
               {stats.roiRatio}×
             </span>

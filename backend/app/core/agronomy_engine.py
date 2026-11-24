@@ -212,6 +212,109 @@ AGRONOMIC_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
 }
 
 
+def evaluate_weather_spray_safety(
+    weather_data: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """
+    Evaluates ICAR/IRRI weather-based spray safety decision rules using real Open-Meteo telemetry.
+    Rules:
+      1. Rain wash-off check (current rain > 0 or upcoming precipitation)
+      2. Droplet drift check (wind_speed > 15 km/h)
+      3. Evaporation penalty (temp > 35°C or humidity < 35%)
+      4. Optimal spray conditions (temp 20-30°C, humidity 60-85%, wind < 12 km/h)
+    """
+    if not weather_data or not weather_data.get("available", False):
+        return {
+            "status": "WEATHER_UNAVAILABLE",
+            "can_spray": True,
+            "badge_color": "var(--text-muted)",
+            "headline": "Weather Advisory: Local Monitoring Required",
+            "message": "Live weather telemetry unavailable. Ensure calm, dry conditions manually before spraying.",
+            "wind_speed_kmh": None,
+            "temperature_c": None,
+            "humidity_pct": None,
+            "rain_mm": None,
+        }
+
+    current = weather_data.get("current", {})
+    temp = current.get("temperature_c")
+    humidity = current.get("relative_humidity_pct")
+    rain = current.get("rain_mm", 0.0) or 0.0
+    wind_speed = current.get("wind_speed_kmh", 0.0) or 0.0
+
+    forecast = weather_data.get("forecast_3day", [])
+    day1_precip = forecast[0].get("precip_mm", 0.0) if forecast else 0.0
+
+    # Rule 1: Rain Wash-off Hazard
+    if rain > 0.1 or (day1_precip and day1_precip > 5.0):
+        return {
+            "status": "DO_NOT_SPRAY_RAIN",
+            "can_spray": False,
+            "badge_color": "var(--danger)",
+            "headline": "DO NOT SPRAY: Rain Wash-off Hazard",
+            "message": f"Precipitation detected ({rain:.1f} mm) or rain forecast ({day1_precip:.1f} mm). Chemical application cancelled — active ingredients will be washed off.",
+            "wind_speed_kmh": wind_speed,
+            "temperature_c": temp,
+            "humidity_pct": humidity,
+            "rain_mm": rain,
+        }
+
+    # Rule 2: High Wind Chemical Drift Hazard (> 15 km/h)
+    if wind_speed > 15.0:
+        return {
+            "status": "DO_NOT_SPRAY_WIND",
+            "can_spray": False,
+            "badge_color": "var(--danger)",
+            "headline": "DO NOT SPRAY: Severe Wind Drift Hazard",
+            "message": f"Wind speed is {wind_speed:.1f} km/h (safety limit: 15 km/h). Prohibited due to drift hazard onto adjacent plots and water sources.",
+            "wind_speed_kmh": wind_speed,
+            "temperature_c": temp,
+            "humidity_pct": humidity,
+            "rain_mm": rain,
+        }
+
+    # Rule 3: High Temperature & Low Humidity Evaporative Loss
+    if (temp is not None and temp > 35.0) or (humidity is not None and humidity < 35.0):
+        return {
+            "status": "CAUTION_EVAPORATION",
+            "can_spray": True,
+            "badge_color": "var(--warning)",
+            "headline": "CAUTION: Rapid Droplet Evaporation",
+            "message": f"High ambient temperature ({temp}°C) will vaporize spray droplets before canopy contact. Restrict spraying strictly to early morning (6:00–8:30 AM).",
+            "wind_speed_kmh": wind_speed,
+            "temperature_c": temp,
+            "humidity_pct": humidity,
+            "rain_mm": rain,
+        }
+
+    # Rule 4: Moderate Wind (10 - 15 km/h)
+    if wind_speed > 10.0:
+        return {
+            "status": "CAUTION_WIND",
+            "can_spray": True,
+            "badge_color": "var(--warning)",
+            "headline": "ADVISORY: Moderate Breeze",
+            "message": f"Wind speed is {wind_speed:.1f} km/h. Use drift-reduction coarse nozzles and keep the spray lance close to the canopy.",
+            "wind_speed_kmh": wind_speed,
+            "temperature_c": temp,
+            "humidity_pct": humidity,
+            "rain_mm": rain,
+        }
+
+    # Rule 5: Optimal Conditions
+    return {
+        "status": "OPTIMAL_CONDITIONS",
+        "can_spray": True,
+        "badge_color": "var(--success)",
+        "headline": "IDEAL SPRAY WINDOW: Safe Atmospheric Conditions",
+        "message": f"Calm wind ({wind_speed:.1f} km/h), favorable temperature ({temp}°C), and good humidity ({humidity}%). Excellent canopy retention expected.",
+        "wind_speed_kmh": wind_speed,
+        "temperature_c": temp,
+        "humidity_pct": humidity,
+        "rain_mm": rain,
+    }
+
+
 def calculate_agronomic_dosage(
     disease_type: str,
     severity: float,
@@ -219,9 +322,11 @@ def calculate_agronomic_dosage(
     area_unit: str = "acre",
     sprayer_tank_capacity_l: float = 16.0,
     growth_stage: str = "Tillering",
+    weather_data: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
-    Computes exact ICAR compliant chemical quantities, dilution water, and knapsack sprayer tank counts.
+    Computes exact ICAR compliant chemical quantities, dilution water, knapsack sprayer tank counts,
+    and live weather-based spray feasibility.
     """
     # Normalize disease
     disease_key = "Healthy"
@@ -283,6 +388,7 @@ def calculate_agronomic_dosage(
         "economic_threshold": info.get("economic_threshold"),
         "spray_schedule": info.get("spray_schedule"),
         "safety_ppe_checklist": info.get("ppe_checklist", []),
+        "weather_safety": evaluate_weather_spray_safety(weather_data),
     }
 
 

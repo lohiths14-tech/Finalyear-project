@@ -20,6 +20,8 @@ class DosageRequest(BaseModel):
     area_unit: str = Field("acre", description="Unit of land (acre, hectare, guntha, bigha, cent)")
     sprayer_tank_capacity_l: float = Field(16.0, gt=0.0, description="Capacity of knapsack sprayer in liters")
     growth_stage: str = Field("Tillering", description="Crop growth stage (Seedling, Tillering, Panicle Initiation, Flowering, Maturity)")
+    lat: Optional[float] = Field(None, description="Field latitude for live Open-Meteo weather spray verification")
+    lon: Optional[float] = Field(None, description="Field longitude for live Open-Meteo weather spray verification")
 
 
 class ConsultRequest(BaseModel):
@@ -42,9 +44,18 @@ class PrescriptionRequest(BaseModel):
 @router.post("/calculate-dosage")
 async def get_dosage(req: DosageRequest):
     """
-    Calculate ICAR compliant chemical/bio dosage, water dilution requirements, and knapsack sprayer pump count.
+    Calculate ICAR compliant chemical/bio dosage, water dilution requirements, knapsack sprayer pump count,
+    and evaluate real-time Open-Meteo weather spray safety.
     """
     try:
+        weather_data = None
+        if req.lat is not None and req.lon is not None:
+            from ...services.external_apis import external_api_service
+
+            weather_data = await external_api_service.get_weather(
+                req.lat, req.lon
+            )
+
         dosage_info = calculate_agronomic_dosage(
             disease_type=req.disease_type,
             severity=req.severity,
@@ -52,10 +63,13 @@ async def get_dosage(req: DosageRequest):
             area_unit=req.area_unit,
             sprayer_tank_capacity_l=req.sprayer_tank_capacity_l,
             growth_stage=req.growth_stage,
+            weather_data=weather_data,
         )
         return dosage_info
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to calculate dosage: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to calculate dosage: {str(e)}"
+        )
 
 
 @router.get("/ai-status")

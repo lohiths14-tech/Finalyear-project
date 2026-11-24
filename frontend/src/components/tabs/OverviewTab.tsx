@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import NumberFlow from '@number-flow/react';
 import {
   ShieldCheck, AlertTriangle, Activity, Award, CheckCircle2, ZoomIn, X, Sparkles, Bot, Cpu
 } from 'lucide-react';
@@ -140,8 +141,15 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <p className="card-label">Field Health Score</p>
             <ShieldCheck size={18} color="var(--success)" />
           </div>
-          <h3 className="card-value">
-            {results ? `${(100 - results.average_severity).toFixed(1)}/100` : '--'}
+          <h3 className="card-value" style={{ display: 'flex', alignItems: 'center' }}>
+            {results ? (
+              <>
+                <NumberFlow value={parseFloat((100 - results.average_severity).toFixed(1))} />
+                <span>/100</span>
+              </>
+            ) : (
+              '--'
+            )}
           </h3>
           <div className="progress-bar">
             <motion.div
@@ -160,8 +168,8 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             </div>
           )}
           {metrics && (
-            <div style={{ marginTop: 8, padding: '4px 10px', background: 'var(--primary-glow)', borderRadius: 6, fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600 }}>
-              Val Accuracy (trained weights): {metrics.accuracy.toFixed(1)}%
+            <div style={{ marginTop: 8, padding: '4px 10px', background: 'var(--primary-glow)', borderRadius: 6, fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
+              Val Accuracy: <NumberFlow value={parseFloat(metrics.accuracy.toFixed(1))} />%
             </div>
           )}
         </div>
@@ -209,9 +217,12 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                   background: results.confidence > 70 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
                   color: results.confidence > 70 ? 'var(--success)' : 'var(--warning)',
                   border: `1px solid ${results.confidence > 70 ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '2px',
                 }}
               >
-                {results.confidence.toFixed(1)}% Conf.
+                <NumberFlow value={parseFloat(results.confidence.toFixed(1))} />% Conf.
               </span>
             )}
           </div>
