@@ -13,6 +13,7 @@ import SampleGallery from '../ui/SampleGallery';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
 import ProgressionSimulator from '../ui/ProgressionSimulator';
 import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
+import FieldGisMap from '../ui/FieldGisMap';
 import type { FieldResult, GridCell, AiProviderStatus } from '../../types';
 
 // Inference stage labels shown during the 2-3 minute CPU run
@@ -118,7 +119,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   const [hoveredCell, setHoveredCell] = useState<GridCell | null>(null);
   const [showCellLabels, setShowCellLabels] = useState(false);
   const [heatmapOpacity, setHeatmapOpacity] = useState(0.85);
-  const [viewMode, setViewMode] = useState<'ai_overlay' | 'heatmap' | 'image'>('ai_overlay');
+  const [viewMode, setViewMode] = useState<'ai_overlay' | 'heatmap' | 'image' | 'gis_map'>('ai_overlay');
   const [dragOver, setDragOver] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [streamProgress, setStreamProgress] = useState<FieldStreamProgress | null>(null);
@@ -434,10 +435,22 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   <button className={`btn-icon ${viewMode === 'image' ? 'active' : ''}`} onClick={() => setViewMode('image')}>
                     <Eye size={14}/> Original
                   </button>
+                  <button className={`btn-icon ${viewMode === 'gis_map' ? 'active' : ''}`} onClick={() => setViewMode('gis_map')}>
+                    <MapIcon size={14}/> GIS Satellite
+                  </button>
                 </div>
               </div>
 
-              <div style={{ position: 'relative', width: '100%', height: 480, background: '#0f172a', borderRadius: 12, overflow: 'hidden' }}>
+              {viewMode === 'gis_map' ? (
+                <FieldGisMap
+                  imageUrl={imageUrl}
+                  heatmapBase64={localResults?.heatmap_base64}
+                  gridData={gridData}
+                  diseaseType={localResults?.disease_type}
+                  averageSeverity={localResults?.average_severity}
+                />
+              ) : (
+                <div style={{ position: 'relative', width: '100%', height: 480, background: '#0f172a', borderRadius: 12, overflow: 'hidden' }}>
                 {imageUrl && (
                   <img 
                     src={imageUrl} 
@@ -544,6 +557,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   </div>
                 )}
               </div>
+              )}
 
               {/* View Controls & Legend Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 12 }}>

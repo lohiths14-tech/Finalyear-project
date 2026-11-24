@@ -33,6 +33,7 @@ export const FarmerLanguageSelector: React.FC<FarmerLanguageSelectorProps> = ({
         <option value="en">English</option>
         <option value="hi">हिन्दी (Hindi)</option>
         <option value="te">తెలుగు (Telugu)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
       </select>
     </div>
   );

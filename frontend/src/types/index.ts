@@ -124,7 +124,7 @@ export interface ScanHistoryItem {
 
 export type FarmerView = 'home' | 'result' | 'history';
 
-export type Language = 'en' | 'hi' | 'kn' | 'te';
+export type Language = 'en' | 'hi' | 'kn' | 'te' | 'ta';
 
 export interface OfflineQueueItem {
   id: number;

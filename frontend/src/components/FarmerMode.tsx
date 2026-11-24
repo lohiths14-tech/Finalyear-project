@@ -68,6 +68,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
         kn: 'kn-IN',
         hi: 'hi-IN',
         te: 'te-IN',
+        ta: 'ta-IN',
         en: 'en-IN',
       };
       utterance.lang = langMap[lang] || 'en-IN';
