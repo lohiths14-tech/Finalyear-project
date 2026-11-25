@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Upload, Map as MapIcon,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
+import { buildThermalFallbackDataUrl } from '../../utils/thermalHeatmap';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
 import ProgressionSimulator from '../ui/ProgressionSimulator';
 import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
@@ -120,6 +121,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   const [showCellLabels, setShowCellLabels] = useState(false);
   const [heatmapOpacity, setHeatmapOpacity] = useState(0.85);
   const [viewMode, setViewMode] = useState<'ai_overlay' | 'heatmap' | 'image' | 'gis_map'>('ai_overlay');
+  const [heatmapImgFailed, setHeatmapImgFailed] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [isCertOpen, setIsCertOpen] = useState(false);
   const [streamProgress, setStreamProgress] = useState<FieldStreamProgress | null>(null);
@@ -194,6 +196,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
     setScanning(true);
     setStreamProgress(null);
     setLocalResults(null);
+    setHeatmapImgFailed(false);
     setSelectedCell(null);
     setHoveredCell(null);
     if (imageUrl) URL.revokeObjectURL(imageUrl);
@@ -265,6 +268,14 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   };
 
   const gridData = localResults?.grid_data || [];
+  const fallbackHeatmapUrl = useMemo(
+    () => buildThermalFallbackDataUrl(gridData),
+    [gridData]
+  );
+  const effectiveHeatmapUrl =
+    !heatmapImgFailed && localResults?.heatmap_base64
+      ? `data:image/png;base64,${localResults.heatmap_base64}`
+      : fallbackHeatmapUrl;
   const infectedPct =
     localResults?.percentage_infected_area ??
     localResults?.infection_rate ??
@@ -525,119 +536,119 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
               {viewMode === 'gis_map' ? (
                 <FieldGisMap
                   imageUrl={imageUrl}
-                  heatmapBase64={localResults?.heatmap_base64}
+                  heatmapDataUrl={effectiveHeatmapUrl}
                   gridData={gridData}
                   diseaseType={localResults?.disease_type}
                   averageSeverity={localResults?.average_severity}
+                  onSelectCell={setSelectedCell}
                 />
               ) : (
-                <div style={{ position: 'relative', width: '100%', height: 480, background: '#0f172a', borderRadius: 12, overflow: 'hidden' }}>
-                {imageUrl && (
-                  <img 
-                    src={imageUrl} 
-                    alt="Field" 
-                    style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      objectFit: 'cover', 
-                      opacity: viewMode === 'image' ? 1 : 0.8 
-                    }} 
-                  />
-                )}
-                
-                {viewMode === 'ai_overlay' && localResults?.heatmap_base64 && (
-                  <img 
-                    src={`data:image/png;base64,${localResults.heatmap_base64}`} 
-                    alt="AI Disease Heatmap" 
-                    style={{ 
-                      position: 'absolute', 
-                      inset: 0, 
-                      width: '100%', 
-                      height: '100%', 
-                      objectFit: 'cover', 
-                      opacity: heatmapOpacity,
-                      mixBlendMode: 'normal',
-                      transition: 'opacity 0.2s'
-                    }} 
-                    onError={(e) => {
-                      console.error('Failed to load heatmap image');
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                )}
+                <div className="spatial-stage">
+                  {imageUrl ? (
+                    <div className="spatial-image-frame">
+                      <img
+                        src={imageUrl}
+                        alt="Field canopy"
+                        className="spatial-base-img"
+                        style={{ opacity: viewMode === 'image' ? 1 : 0.9 }}
+                      />
 
-                {/* Grid Map Mode: Clean translucent cells with no clutter */}
-                {viewMode === 'heatmap' && gridData.length > 0 && (
-                  <div style={{ position: 'absolute', inset: 0 }}>
-                    {gridData.map((cell, idx) => {
-                      const sev = cell.severity || 0;
-                      const isSelected = selectedCell === cell;
-                      const isHovered = hoveredCell === cell;
-                      const bg = sev > 50 ? 'rgba(220,38,38,0.35)' : sev > 20 ? 'rgba(217,119,6,0.35)' : 'rgba(16,185,129,0.25)';
-                      const border = sev > 50 ? '#dc2626' : sev > 20 ? '#d97706' : '#10b981';
-                      
-                      return (
-                        <div 
-                          key={idx} 
-                          style={{ 
-                            position: 'absolute', 
-                            left: `${cell.x_percent}%`, top: `${cell.y_percent}%`, 
-                            width: `${cell.w_percent}%`, height: `${cell.h_percent}%`, 
-                            background: isHovered ? (sev > 50 ? 'rgba(220,38,38,0.6)' : 'rgba(16,185,129,0.5)') : bg, 
-                            border: isSelected ? '2px solid #ffffff' : `1px solid ${border}`,
-                            boxShadow: isSelected ? '0 0 0 2px #0f172a, 0 0 8px rgba(0,0,0,0.6)' : isHovered ? `0 0 6px ${border}` : 'none',
-                            transition: 'all 0.15s ease-out', 
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.68rem',
-                            fontWeight: 700,
-                            color: '#ffffff',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.9)',
-                            zIndex: isSelected ? 10 : isHovered ? 5 : 1
+                      {/* Mode 1: AI Thermal Map (Gaussian thermal overlay + interactive patch inspection) */}
+                      {viewMode === 'ai_overlay' && effectiveHeatmapUrl && (
+                        <img
+                          src={effectiveHeatmapUrl}
+                          alt="AI Disease Heatmap"
+                          className="spatial-heatmap-img"
+                          style={{ opacity: heatmapOpacity }}
+                          onError={() => {
+                            if (!heatmapImgFailed) setHeatmapImgFailed(true);
                           }}
-                          onMouseEnter={() => setHoveredCell(cell)}
-                          onMouseLeave={() => setHoveredCell(null)}
-                          onClick={() => setSelectedCell(cell)}
-                        >
-                          {showCellLabels && sev > 15 && `${sev.toFixed(0)}%`}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                        />
+                      )}
 
-                {/* Floating Hover Tooltip */}
-                {hoveredCell && (
-                  <div 
-                    style={{ 
-                      position: 'absolute', 
-                      top: 16, 
-                      left: 16, 
-                      background: 'rgba(15,23,42,0.92)', 
-                      backdropFilter: 'blur(8px)',
-                      color: '#ffffff', 
-                      padding: '8px 14px', 
-                      borderRadius: 8, 
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      fontSize: '0.8rem',
-                      pointerEvents: 'none',
-                      zIndex: 20,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12
-                    }}
-                  >
-                    <span>📍 Patch ({hoveredCell.x_percent.toFixed(0)}%, {hoveredCell.y_percent.toFixed(0)}%)</span>
-                    <span style={{ color: hoveredCell.severity > 50 ? '#f87171' : hoveredCell.severity > 20 ? '#fbbf24' : '#4ade80', fontWeight: 700 }}>
-                      Severity: {hoveredCell.severity.toFixed(1)}%
-                    </span>
-                    <span style={{ color: '#cbd5e1' }}>{hoveredCell.disease}</span>
-                  </div>
-                )}
-              </div>
+                      {viewMode === 'ai_overlay' && gridData.length > 0 && (
+                        <div className="spatial-overlay-layer">
+                          {gridData.map((cell, idx) => {
+                            const isSelected = selectedCell === cell;
+                            const isHovered = hoveredCell === cell;
+                            return (
+                              <div
+                                key={idx}
+                                className={`spatial-hit-cell ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
+                                style={{
+                                  left: `${cell.x_percent}%`,
+                                  top: `${cell.y_percent}%`,
+                                  width: `${cell.w_percent}%`,
+                                  height: `${cell.h_percent}%`,
+                                }}
+                                onMouseEnter={() => setHoveredCell(cell)}
+                                onMouseLeave={() => setHoveredCell(null)}
+                                onClick={() => setSelectedCell(cell)}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Mode 2: Grid Map (Color-coded adaptive grid cells aligned 1:1 with image) */}
+                      {viewMode === 'heatmap' && gridData.length > 0 && (
+                        <div className="spatial-overlay-layer">
+                          {gridData.map((cell, idx) => {
+                            const sev = cell.severity || 0;
+                            const isSelected = selectedCell === cell;
+                            const isHovered = hoveredCell === cell;
+                            const bg = sev > 50 ? 'rgba(220,38,38,0.38)' : sev > 20 ? 'rgba(217,119,6,0.38)' : 'rgba(16,185,129,0.26)';
+                            const border = sev > 50 ? '#dc2626' : sev > 20 ? '#d97706' : '#10b981';
+
+                            return (
+                              <div
+                                key={idx}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${cell.x_percent}%`,
+                                  top: `${cell.y_percent}%`,
+                                  width: `${cell.w_percent}%`,
+                                  height: `${cell.h_percent}%`,
+                                  background: isHovered ? (sev > 50 ? 'rgba(220,38,38,0.62)' : sev > 20 ? 'rgba(217,119,6,0.58)' : 'rgba(16,185,129,0.5)') : bg,
+                                  border: isSelected ? '2px solid #ffffff' : `1px solid ${border}`,
+                                  boxShadow: isSelected ? '0 0 0 2px #0f172a, 0 0 8px rgba(0,0,0,0.6)' : isHovered ? `0 0 6px ${border}` : 'none',
+                                  transition: 'all 0.15s ease-out',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.68rem',
+                                  fontWeight: 700,
+                                  color: '#ffffff',
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+                                  zIndex: isSelected ? 10 : isHovered ? 5 : 1,
+                                }}
+                                onMouseEnter={() => setHoveredCell(cell)}
+                                onMouseLeave={() => setHoveredCell(null)}
+                                onClick={() => setSelectedCell(cell)}
+                              >
+                                {showCellLabels && sev > 15 && `${sev.toFixed(0)}%`}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="spatial-no-image">Field image preview unavailable</div>
+                  )}
+
+                  {/* Floating Hover Tooltip */}
+                  {hoveredCell && viewMode !== 'image' && (
+                    <div className="spatial-hover-tooltip">
+                      <span>📍 Patch ({hoveredCell.x_percent.toFixed(0)}%, {hoveredCell.y_percent.toFixed(0)}%)</span>
+                      <span style={{ color: hoveredCell.severity > 50 ? '#f87171' : hoveredCell.severity > 20 ? '#fbbf24' : '#4ade80', fontWeight: 700 }}>
+                        Severity: {hoveredCell.severity.toFixed(1)}%
+                      </span>
+                      <span style={{ color: '#cbd5e1' }}>{hoveredCell.disease}</span>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* View Controls & Legend Bar */}

@@ -667,52 +667,58 @@ class InferenceService:
         # Continuous High-Resolution Gaussian Heatmap Generation
         heatmap_base64 = None
         try:
-
-            # 1. Build dense 2D grid of severity values
+            # 1. Build dense 2D grid using calibrated node_severities (matches Grid Map & Hotspots)
             grid_sev = np.zeros((grid_rows, grid_cols), dtype=np.float32)
             grid_count = np.zeros((grid_rows, grid_cols), dtype=np.float32)
 
             for i, reg in enumerate(regions):
-                r_i = reg.get("grid_r", 0)
-                c_i = reg.get("grid_c", 0)
-                grid_sev[r_i, c_i] += float(severity[i].item())
+                r_i = min(grid_rows - 1, max(0, int(reg.get("grid_r", 0))))
+                c_i = min(grid_cols - 1, max(0, int(reg.get("grid_c", 0))))
+                grid_sev[r_i, c_i] += float(node_severities[i])
                 grid_count[r_i, c_i] += 1.0
 
-            # Normalize cells
+            # Normalize cells; keep unpopulated background cells at 0.0
             valid_mask = grid_count > 0
             grid_sev[valid_mask] /= grid_count[valid_mask]
 
-            # Fill unpopulated background cells with median
-            if valid_mask.any():
-                fill_val = float(np.median(grid_sev[valid_mask]))
-                grid_sev[~valid_mask] = fill_val
-
-            # 2. Continuous bicubic interpolation
-            dense_map = cv2.resize(
-                grid_sev, (w, h), interpolation=cv2.INTER_CUBIC
+            # 2. Continuous bicubic interpolation over full image dimensions
+            dense_map = np.clip(
+                cv2.resize(grid_sev, (w, h), interpolation=cv2.INTER_CUBIC),
+                0.0,
+                100.0,
+            )
+            dense_valid = cv2.resize(
+                valid_mask.astype(np.float32), (w, h), interpolation=cv2.INTER_LINEAR
             )
 
             # 3. Resolution-adaptive Gaussian smoothing
-            ksize = max(21, int(max(h, w) * 0.04) | 1)
-            heatmap_smooth = cv2.GaussianBlur(dense_map, (ksize, ksize), 0)
+            ksize = max(21, int(max(h, w) * 0.06) | 1)
+            heatmap_smooth = np.clip(
+                cv2.GaussianBlur(dense_map, (ksize, ksize), 0), 0.0, 100.0
+            )
+            support_smooth = np.clip(
+                cv2.GaussianBlur(dense_valid, (ksize, ksize), 0), 0.0, 1.0
+            )
 
-            # 4. Map severity to 0-255 range
-            norm = np.clip(
-                (heatmap_smooth / 100.0) * 255.0, 0, 255
+            # 4. Map severity (0-100) -> colormap range (shifted away from dark blue 0 so low=green/cyan, high=orange/red)
+            # TURBO: ~85 = green, ~140 = yellow, ~195 = orange, ~245 = bright red
+            color_pos = np.clip(
+                85.0 + (heatmap_smooth / 100.0) * 165.0, 0, 255
             ).astype(np.uint8)
-
-            # 5. Apply TURBO colormap
-            colored = cv2.applyColorMap(norm, cv2.COLORMAP_TURBO)
+            colored = cv2.applyColorMap(color_pos, cv2.COLORMAP_TURBO)
             rgba = cv2.cvtColor(colored, cv2.COLOR_BGR2RGBA)
 
-            # 6. Canopy-Aware Alpha Mask
-            alpha_ch = (
-                norm.astype(np.float32) * (200.0 / 255.0)
-            ).astype(np.uint8)
+            # 5. Alpha channel: visible over populated vegetation patches + stronger over severe disease
+            # Avoid erasing severe brown/necrotic patches that fall outside green HSV mask
             dilated_mask = cv2.dilate(
-                mask, np.ones((7, 7), np.uint8), iterations=1
+                mask, np.ones((9, 9), np.uint8), iterations=1
             )
-            alpha_ch[dilated_mask == 0] = 0
+            canopy_presence = np.maximum(
+                (dilated_mask > 0).astype(np.float32),
+                (support_smooth > 0.2).astype(np.float32) * support_smooth,
+            )
+            sev_alpha = 65.0 + (heatmap_smooth / 100.0) * 160.0
+            alpha_ch = np.clip(sev_alpha * canopy_presence, 0, 225).astype(np.uint8)
             rgba[:, :, 3] = alpha_ch
 
             success, buf = cv2.imencode(".png", rgba)
