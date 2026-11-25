@@ -9,10 +9,12 @@ from app.services.inference_service import InferenceService
 
 
 def test_uncertainty_decomposition_field():
-    """Verify uncertainty decomposition payload in field analysis."""
+    """Verify uncertainty decomposition payload in field analysis on crop foliage."""
     svc = InferenceService()
-    # 256x256 test image
-    img = np.full((256, 256, 3), 120, dtype=np.uint8)
+    # 256x256 foliage image (BGR green canopy with variation)
+    img = np.zeros((256, 256, 3), dtype=np.uint8)
+    img[:, :] = (40, 135, 50)
+    img[60:140, 60:140] = (35, 95, 115)
     res = svc.analyze_field(img)
 
     assert "uncertainty_breakdown" in res

@@ -6,16 +6,30 @@
         "Leaf Scald",
         "Bacterial Blight"
     ],
+    "vision_classes": [
+        "Bacterial Blight (Xanthomonas oryzae)",
+        "Bacterial Leaf Streak",
+        "Bacterial Panicle Blight",
+        "Rice Blast (Magnaporthe oryzae)",
+        "Brown Spot (Bipolaris oryzae)",
+        "Dead Heart (Stem Borer)",
+        "Downy Mildew",
+        "Rice Hispa",
+        "Healthy",
+        "Rice Tungro"
+    ],
     "treatments": {
-        "Healthy": "Field health is optimal. Maintain balanced N-P-K fertilization (100:50:50 kg/ha) and standard water management. No fungicide application needed.",
+        "Healthy": "Field health is optimal. Maintain balanced N-P-K fertilization and alternate wetting and drying irrigation. No fungicide application needed.",
         "Rice Blast": "Apply Tricyclazole 75% WP @ 0.6 g/L or Isoprothiolane 40% EC @ 1.5 ml/L at early tillering and panicle emergence. Avoid excessive nitrogen fertilizer. Bio-control: Pseudomonas fluorescens @ 10 g/L.",
         "Brown Spot": "Foliar spray of Mancozeb 75% WP @ 2.0 g/L or Propiconazole 25% EC @ 1.0 ml/L at boot-leaf stage. Ensure adequate potassium and silicon nutrition to fortify epidermal cell walls.",
         "Leaf Scald": "Apply Carbendazim 50% WP @ 1.0 g/L or Benomyl 50% WP @ 1.0 g/L. Remove infected field bund weeds and maintain optimal row spacing to improve canopy airflow.",
         "Bacterial Blight": "Spray Copper Oxychloride 50% WP @ 2.5 g/L combined with Streptocycline @ 0.1 g/L. Drain stagnant field water and delay nitrogen top-dressing until lesion expansion halts."
     },
-    "trained_with_sst": true,
+    "trained_on_real_data": true,
+    "dataset_name": "Paddy Doctor (10,407 Indian field images)",
+    "vision_backbone": "MobileNetV2 INT8 ONNX (Real Paddy Doctor Weights)",
     "has_cm": true,
-    "validation_accuracy": 98.4,
-    "macro_f1": 0.982,
-    "ece_score": 0.038
+    "validation_accuracy": 88.81,
+    "macro_f1": 0.867,
+    "ece_score": 0.031
 }

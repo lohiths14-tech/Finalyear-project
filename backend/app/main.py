@@ -79,7 +79,6 @@ async def lifespan(app: FastAPI):
             app.state.inference_service = svc
         except Exception as e:
             logger.warning(f"Model loading warning: {e}")
-            from app.services.inference_service import InferenceService
             app.state.inference_service = InferenceService()
 
     svc = getattr(app.state, "inference_service", None)

@@ -489,7 +489,11 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Spatial Moran&apos;s I Index:</span><br/>
-                      <strong style={{ color: 'var(--text-primary)' }}>{localResults.spatial_morans_i ? localResults.spatial_morans_i.toFixed(4) : '+0.2170 (Spatial Clustering)'}</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>
+                        {typeof localResults.spatial_morans_i === 'number'
+                          ? `${localResults.spatial_morans_i >= 0 ? '+' : ''}${localResults.spatial_morans_i.toFixed(4)} (${localResults.spatial_morans_i > 0.15 ? 'Spatial Clustering' : 'Uniform / Scattered'})`
+                          : 'Unavailable (insufficient grid nodes)'}
+                      </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Adaptive Grid Analysis:</span><br/>
@@ -501,7 +505,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Inference Architecture:</span><br/>
-                      <strong style={{ color: 'var(--text-primary)' }}>ONNX INT8 Quantized (2.36 MB)</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>MobileNetV2 ONNX INT8 (2.42 MB)</strong>
                     </div>
                   </div>
                 </div>

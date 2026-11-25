@@ -6,29 +6,44 @@ class AgriImageProcessor:
     @staticmethod
     def remove_soil_and_shadow(image: np.ndarray):
         """
-        Removes soil and shadows using ExG (Excess Green) index and Otsu thresholding.
-        """  # noqa: E501
+        Segments crop foliage from soil, shadow, and non-plant backgrounds using
+        Excess Green (ExG), HSV foliage chromaticity gating, and Otsu thresholding.
+        """
         if image is None or image.size == 0:
             raise ValueError("Empty or invalid image provided")
 
         img_float = image.astype(np.float32) / 255.0
-        r, g, b = img_float[:, :, 0], img_float[:, :, 1], img_float[:, :, 2]
+        # OpenCV images are BGR
+        b, g, r = img_float[:, :, 0], img_float[:, :, 1], img_float[:, :, 2]
 
         # Excess Green Index (ExG) = 2g - r - b
-        exg = 2 * g - r - b
+        exg = 2.0 * g - r - b
 
-        # Normalize ExG to 0-255
-        exg_norm = cv2.normalize(exg, None, 0, 255, cv2.NORM_MINMAX).astype(
-            np.uint8
+        # HSV chromaticity gate: captures green canopy as well as chlorotic/yellow-brown lesions,
+        # while rejecting achromatic grey/black/white non-plant objects (e.g. OOD traps).
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        h_ch, s_ch, v_ch = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+        foliage_chroma = (
+            (exg > 0.025)
+            | ((h_ch >= 14) & (h_ch <= 98) & (s_ch >= 28) & (v_ch >= 25))
         )
 
-        # Otsu thresholding to segment vegetation
-        _, mask = cv2.threshold(
-            exg_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+        if not np.any(foliage_chroma):
+            empty_mask = np.zeros(image.shape[:2], dtype=np.uint8)
+            return np.zeros_like(image), empty_mask
+
+        # Clip ExG to positive vegetation range before Otsu so background noise isn't stretched
+        exg_pos = np.clip(exg, 0.0, 1.0)
+        exg_u8 = (exg_pos * 255.0).astype(np.uint8)
+        _, otsu_mask = cv2.threshold(
+            exg_u8, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU
         )
 
-        # Morphological operations to clean noise
-        kernel = np.ones((5, 5), np.uint8)  # FIX: was np.one (NameError)
+        # Combine Otsu vegetation with chromatic foliage gate
+        mask = np.where(foliage_chroma & ((otsu_mask > 0) | (exg > 0.02)), 255, 0).astype(np.uint8)
+
+        # Morphological operations to clean isolated pixel noise
+        kernel = np.ones((5, 5), np.uint8)
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
@@ -36,13 +51,35 @@ class AgriImageProcessor:
         return result, mask
 
     @staticmethod
+    def measure_lesion_ratio(image: np.ndarray, mask: np.ndarray) -> float:
+        """
+        Estimates physical chlorotic/necrotic lesion fraction (0.0 - 1.0) within
+        detected crop foliage pixels using ExG / HSV yellow-brown contrast.
+        """
+        veg_pixels = mask > 0
+        veg_count = int(np.sum(veg_pixels))
+        if veg_count == 0:
+            return 0.0
+
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+        h_ch, s_ch, v_ch = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+
+        img_f = image.astype(np.float32) / 255.0
+        b, g, r = img_f[:, :, 0], img_f[:, :, 1], img_f[:, :, 2]
+        exg = 2.0 * g - r - b
+
+        # Chlorotic/necrotic lesions exhibit lower green excess or yellow/brown/tan hue (H < 32 or low ExG)
+        lesion_px = veg_pixels & ((exg < 0.08) | ((h_ch < 32) & (s_ch > 25)) | (v_ch < 70))
+        return float(np.sum(lesion_px) / veg_count)
+
+    @staticmethod
     def rgb_to_pseudo_hsi(image: np.ndarray):
         """
-        Reconstructs pseudo-HSI (Hue, Saturation, Intensity) from RGB.
+        Reconstructs pseudo-HSI (Hue, Saturation, Intensity) from BGR/RGB image.
         Robust to lighting variations.
         """
         img_float = image.astype(np.float32) / 255.0
-        r, g, b = img_float[:, :, 0], img_float[:, :, 1], img_float[:, :, 2]
+        b, g, r = img_float[:, :, 0], img_float[:, :, 1], img_float[:, :, 2]
 
         intensity = np.mean(img_float, axis=2)
 
@@ -63,7 +100,7 @@ class AgriImageProcessor:
         """
         Extracts Normalized Gray Value Curve (NGVC).
         Represents the intensity distribution — a key texture feature for disease detection.
-        """  # noqa: E501
+        """
         if (
             image_region is None
             or image_region.size == 0
@@ -80,7 +117,7 @@ class AgriImageProcessor:
 
         pixels = gray[gray > 0].flatten()
         if len(pixels) == 0:
-            return np.zeros(bins)
+            return np.zeros(bins, dtype=np.float32)
 
         hist, _ = np.histogram(
             pixels, bins=bins, range=(0, 255), density=False

@@ -43,10 +43,10 @@ export const ProgressionSimulator: React.FC<ProgressionSimulatorProps> = ({
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-              14-Day Dynamic "What-If" Progression Simulator
+              14-Day Theoretical "What-If" Heuristic Simulator
             </h4>
             <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Epidemiological modeling of foliar pathogen spread: Treated vs Untreated
+              Not enough historical observations to estimate actual progression — illustrative epidemiological scenarios only
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export const ProgressionSimulator: React.FC<ProgressionSimulatorProps> = ({
               ? 'Fungicide applied within 48h window.'
               : day < 7
               ? 'Spore sporulation halted; necrotic perimeter quarantined.'
-              : 'New tillers emerge; photosynthetic efficiency preserved at 92%.'}
+              : 'New tillers emerge as foliar lesion expansion is contained.'}
           </p>
         </div>
       </div>

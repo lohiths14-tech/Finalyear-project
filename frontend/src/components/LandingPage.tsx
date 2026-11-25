@@ -195,8 +195,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
             <div className="text-xs text-slate-400 mt-1">Paddy Doctor Verified Images</div>
           </div>
           <div className="text-center p-3">
-            <div className="text-3xl font-extrabold text-emerald-400 font-mono">91.8%</div>
-            <div className="text-xs text-slate-400 mt-1">Macro F1 Diagnostic Accuracy</div>
+            <div className="text-3xl font-extrabold text-emerald-400 font-mono">88.8%</div>
+            <div className="text-xs text-slate-400 mt-1">Paddy Doctor Val Acc (0.867 F1)</div>
           </div>
           <div className="text-center p-3">
             <div className="text-3xl font-extrabold text-teal-300 font-mono">&lt; 7 ms</div>

@@ -144,7 +144,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <div>
               <strong className="overview-status-banner__title">System Benchmark Baseline Active</strong>
               <div className="overview-status-banner__sub">
-                Frozen DINOv2 vision encoder + ONNX INT8 student (Macro F1: 91.8%, ECE: 0.038). Awaiting live field scan.
+                MobileNetV2 Paddy Vision Student ONNX INT8 (88.8% Val Acc · Macro F1: 0.867 · ECE: 0.031). Awaiting live field scan.
               </div>
             </div>
           </div>
