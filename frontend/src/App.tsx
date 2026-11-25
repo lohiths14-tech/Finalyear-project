@@ -370,7 +370,7 @@ function App() {
 
                   <button
                     onClick={() => setQrOpen(true)}
-                    className="theme-toggle-btn"
+                    className="theme-toggle-btn qr-mobile-btn"
                     aria-label="Open on Mobile Phone"
                     title="Open on Mobile Phone via QR"
                   >

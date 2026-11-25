@@ -1647,28 +1647,51 @@
     --topbar-h: 58px;
   }
 
-  .main-content { padding: 16px 16px 40px; }
+  html, body, #root, .app-container, .main-wrapper {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
 
-  .top-navbar { padding: 0 16px; }
-  .top-navbar-farmer { padding: 0 14px; }
+  .main-content { padding: 14px 14px 40px; }
 
-  .top-nav-right { gap: 8px; }
+  .top-navbar { padding: 0 12px; gap: 8px; }
+  .top-navbar-farmer { padding: 0 12px; }
+
+  .top-nav-right { gap: 6px; flex-shrink: 0; }
 
   .ai-badge { display: none; }
 
   .stats-grid { grid-template-columns: 1fr 1fr; }
 
-  .page-heading { font-size: 1rem; }
+  .page-heading {
+    font-size: 0.96rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 44vw;
+  }
   .page-subheading { display: none; }
 
-  .toast-container { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+  .farmer-app-viewport { padding: 20px 14px 48px; }
+  .action-card { padding: 28px 18px; }
 
-  .card, .glass { padding: 16px 18px; }
+  .toast-container { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+
+  .card, .glass { padding: 14px 16px; }
+}
+
+@media (max-width: 640px) {
+  .mode-toggle-btn { padding: 7px 10px; }
+  .mode-toggle-btn span { display: none; }
+  .qr-mobile-btn { display: none; }
+  .brand-title-small { font-size: 0.95rem; margin-right: 4px; }
+  .farmer-badge-pill { font-size: 0.62rem; padding: 2px 7px; }
 }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
-  .main-content { padding: 12px 12px 32px; }
+  .overview-validation-grid { grid-template-columns: 1fr; }
+  .main-content { padding: 12px 10px 32px; }
 }
 
 /* ══════════════════════════════════════════════════════
