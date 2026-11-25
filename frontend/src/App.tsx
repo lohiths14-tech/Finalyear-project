@@ -189,7 +189,7 @@ function App() {
         wasOnline = online;
       } catch {
         if (wasOnline !== false) {
-          addToast('Cannot connect to AgriVision Core Engine', 'error');
+          addToast('Cannot connect to AgriPulse Core Engine', 'error');
         }
         setBackendOnline(false);
         wasOnline = false;
@@ -300,6 +300,14 @@ function App() {
                 >
                   <Smartphone size={14} />
                   <span>Mobile QR</span>
+                </button>
+                <button
+                  className="theme-toggle-btn"
+                  onClick={() => setIsDark(d => !d)}
+                  aria-label="Toggle dark mode"
+                  title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {isDark ? <Sun size={16} /> : <Moon size={16} />}
                 </button>
                 <button
                   id="mode-toggle-btn"

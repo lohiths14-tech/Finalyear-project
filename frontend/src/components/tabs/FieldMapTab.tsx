@@ -1,14 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Upload, Map as MapIcon,
   Activity, Zap, TrendingUp,
   MapPin, Eye, Layers, CheckCircle2, Sparkles,
   Printer, Cpu, Image as ImageIcon,
-  Bot, Send, MessageSquare, ShieldCheck, Droplets, HelpCircle,
+  Bot, Send, MessageSquare, ShieldCheck,
   Award, ChevronRight
 } from 'lucide-react';
-import { analyzeField, analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
+import { analyzeFieldStream, type FieldStreamProgress, consultField, getAiStatus } from '../../services/api';
 import { optimizeImageForUpload } from '../../utils/compress';
 import EconomicImpactWidget from '../ui/EconomicImpactWidget';
 import ProgressionSimulator from '../ui/ProgressionSimulator';
@@ -276,64 +276,53 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
   const delta = localResults?.disease_increasing_pct;
 
   return (
-    <div className="dashboard-container" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div className="dashboard-container field-layout">
       {/* ── HEADER ACTION CARD ── */}
-      <div className="card" style={{ padding: '18px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-card)', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-primary)', fontWeight: 700 }}>
+      <div className="card field-header-card">
+        <div className="field-header-card__left">
+          <h2 className="field-header-card__title">
             <Activity color="var(--primary)" size={22} /> Field-Level Spatial Diagnosis
           </h2>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+          <p className="field-header-card__sub">
             Adaptive grid-based canopy pathology & ICAR-grounded decision support.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div className="field-header-card__actions">
         {localResults && (
             <>
-              <button 
-                className="btn-icon" 
-                onClick={() => setIsCertOpen(true)} 
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
+              <button
+                className="btn-icon btn-icon--primary"
+                onClick={() => setIsCertOpen(true)}
               >
                 <Award size={15} /> Certificate
               </button>
-              <button 
-                className="btn-icon" 
-                onClick={handlePrintReport} 
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px' }}
-              >
+              <button className="btn-icon" onClick={handlePrintReport}>
                 <Printer size={15} /> Export Report
               </button>
             </>
           )}
           <button
             type="button"
-            className="btn-icon"
+            className="btn-icon btn-icon--primary"
             onClick={handleLoadDemo}
             disabled={scanning || backendOnline === false}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)' }}
             title="Load verified Paddy Doctor Drone Benchmark"
           >
             <Sparkles size={15} /> Load Demo Scan
           </button>
-          <label 
-            className={`btn-primary ${scanning || backendOnline === false ? 'btn-disabled' : ''}`} 
-            style={{ cursor: scanning || backendOnline === false ? 'not-allowed' : 'pointer' }}
-          >
+          <label className={`btn-primary ${scanning || backendOnline === false ? 'btn-disabled' : ''}`}>
             <Upload size={16} /> Upload Field Image
-            <input 
+            <input
               ref={fileInputRef}
-              type="file" 
-              hidden 
-              accept="image/*" 
-              disabled={scanning || backendOnline === false} 
-              onChange={handleUpload} 
+              type="file"
+              hidden
+              accept="image/*"
+              disabled={scanning || backendOnline === false}
+              onChange={handleUpload}
             />
           </label>
           {backendOnline === false && (
-            <span style={{ fontSize: '0.8rem', color: 'var(--danger)', fontWeight: 600 }}>
-              Backend offline
-            </span>
+            <span className="field-offline-warning">Backend offline</span>
           )}
         </div>
       </div>
@@ -509,7 +498,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 20 }}>
+          <div className="field-workspace-grid">
             
             {/* ── PHASE 3: INTERACTIVE DISEASE HEATMAP ── */}
             <div className="card" style={{ padding: 20, background: 'var(--bg-card)' }}>

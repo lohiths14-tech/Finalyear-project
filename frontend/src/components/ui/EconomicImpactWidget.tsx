@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import NumberFlow from '@number-flow/react';
-import { TrendingDown, ShieldAlert, DollarSign, ArrowUpRight, Award } from 'lucide-react';
+import { TrendingDown, ArrowUpRight, Award } from 'lucide-react';
 
 interface EconomicImpactWidgetProps {
   diseaseType: string;
@@ -13,8 +13,6 @@ interface EconomicImpactWidgetProps {
 export const EconomicImpactWidget: React.FC<EconomicImpactWidgetProps> = ({
   diseaseType,
   severity,
-  confidence,
-  cropType = 'Paddy / Rice',
 }) => {
   const isHealthy = diseaseType.toLowerCase().includes('healthy');
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../services/api';
-import { Cpu, Activity, RefreshCw } from 'lucide-react';
+import { Cpu, RefreshCw } from 'lucide-react';
 
 interface HealthSentinelProps {
   onStatusChange?: (isOnline: boolean) => void;

@@ -135,40 +135,32 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
 
   return (
     <motion.div key="overview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+
+      {/* System Status Banner — only shown when no scan */}
       {!results && (
-        <div style={{
-          marginBottom: 20,
-          padding: '14px 20px',
-          background: 'var(--primary-glow)',
-          border: '1px solid rgba(16,185,129,0.3)',
-          borderRadius: 14,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Sparkles size={18} color="var(--primary)" />
+        <div className="overview-status-banner">
+          <div className="overview-status-banner__left">
+            <Sparkles size={18} className="overview-status-banner__icon" />
             <div>
-              <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>System Benchmark Baseline Active</strong>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <strong className="overview-status-banner__title">System Benchmark Baseline Active</strong>
+              <div className="overview-status-banner__sub">
                 Frozen DINOv2 vision encoder + ONNX INT8 student (Macro F1: 91.8%, ECE: 0.038). Awaiting live field scan.
               </div>
             </div>
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', fontMono: 'true' }}>
-            ● Core Engine Online
-          </span>
+          <span className="overview-status-banner__badge">● Core Engine Online</span>
         </div>
       )}
+
+      {/* Stats Grid */}
       <div className="stats-grid">
+        {/* Field Health Score */}
         <div className="card glass glow-on-hover">
           <div className="card-header">
             <p className="card-label">Field Health Score</p>
             <ShieldCheck size={18} color="var(--success)" />
           </div>
-          <h3 className="card-value" style={{ display: 'flex', alignItems: 'center' }}>
+          <h3 className="card-value overview-card-value-flex">
             {results ? (
               <>
                 <NumberFlow value={parseFloat((100 - results.average_severity).toFixed(1))} />
@@ -190,20 +182,21 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             />
           </div>
           {results && trendDirection && (
-            <div style={{ marginTop: 12, padding: '6px 10px', background: 'rgba(255,255,255,0.05)', borderRadius: 6, fontSize: '0.75rem', color: 'var(--text-main)', display: 'flex', justifyContent: 'space-between' }}>
+            <div className="overview-trend-row">
               <span>Trend: {trendDirection}</span>
-              <span style={{ color: trendDirection === 'increasing' && results.average_severity > 20 ? 'var(--danger)' : 'var(--success)' }}>
+              <span className={trendDirection === 'increasing' && results.average_severity > 20 ? 'text-danger' : 'text-success'}>
                 {trendDirection === 'increasing' ? '+' : trendDirection === 'decreasing' ? '-' : ''}{trendChange}%
               </span>
             </div>
           )}
           {metrics && (
-            <div style={{ marginTop: 8, padding: '4px 10px', background: 'var(--primary-glow)', borderRadius: 6, fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
+            <div className="overview-val-accuracy">
               Val Accuracy: <NumberFlow value={parseFloat(metrics.accuracy.toFixed(1))} />%
             </div>
           )}
         </div>
 
+        {/* Dominant Disease */}
         <div className="card glass">
           <div className="card-header">
             <p className="card-label">Dominant Disease</p>
@@ -215,13 +208,10 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               <Activity size={18} color="var(--primary)" />
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+          <div className="overview-disease-row">
             <h3
-              className="card-value"
+              className="card-value overview-disease-name"
               style={{
-                fontSize: '1.2rem',
-                margin: 0,
-                lineHeight: 1.2,
                 color: results
                   ? results.disease_type === 'Healthy'
                     ? 'var(--success)'
@@ -239,24 +229,18 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             </h3>
             {results && results.confidence !== undefined && (
               <span
+                className="overview-confidence-badge"
                 style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: 12,
                   background: results.confidence > 70 ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)',
                   color: results.confidence > 70 ? 'var(--success)' : 'var(--warning)',
                   border: `1px solid ${results.confidence > 70 ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '2px',
                 }}
               >
                 <NumberFlow value={parseFloat(results.confidence.toFixed(1))} />% Conf.
               </span>
             )}
           </div>
-          <p style={{ fontStyle: 'italic', fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+          <p className="overview-taxon-name">
             {results ? (
               results.disease_type?.includes('Rice Blast') || results.alternatives?.[0]?.disease?.includes('Rice Blast') ? 'Magnaporthe oryzae' :
               results.disease_type?.includes('Bacterial Blight') || results.alternatives?.[0]?.disease?.includes('Bacterial Blight') ? 'Xanthomonas oryzae pv. oryzae' :
@@ -266,11 +250,9 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               'Taxonomic Classification'
             ) : 'No active field scan'}
           </p>
-          <p className="card-sub" style={{ marginTop: 4 }}>
-            {results ? `Coverage: ${coverageStr}` : 'Waiting for input…'}
-          </p>
+          <p className="card-sub">{results ? `Coverage: ${coverageStr}` : 'Waiting for input…'}</p>
           {results && distributionData.length > 0 && (
-            <div style={{ marginTop: 8 }}>
+            <div className="overview-pie-wrapper">
               <div style={{ height: '65px' }}>
                 <ResponsiveContainer width="100%" height={65} minWidth={0}>
                   <PieChart>
@@ -283,10 +265,10 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+              <div className="overview-pie-legend">
                 {distributionData.map((d) => (
-                  <span key={d.name} style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: d.color, display: 'inline-block' }} />
+                  <span key={d.name} className="overview-pie-legend-item">
+                    <span className="overview-pie-dot" style={{ background: d.color }} />
                     {d.name}: {d.value}%
                   </span>
                 ))}
@@ -295,12 +277,13 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           )}
         </div>
 
+        {/* Smart Recommendation */}
         <div className="card glass">
           <div className="card-header">
             <p className="card-label">Smart Recommendation</p>
             <AlertTriangle size={18} color="var(--warning)" />
           </div>
-          <p className="card-sub treatment-text" style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginTop: '8px' }}>
+          <p className="card-sub treatment-text overview-recommendation-text">
             {results ? smartRecommendation : 'System benchmark baseline active. Load a field scan to view live ICAR agronomic guidance.'}
           </p>
           {results && (
@@ -311,23 +294,22 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
       </div>
 
-      {/* ── Real-Time Environment Data (Open-Meteo + Nominatim + GBIF) ── */}
-      <div style={{ marginTop: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-          <h3 style={{ margin: 0 }}>Field Environment Intelligence</h3>
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 6 }}>
-            Live · Open-Meteo · Nominatim · GBIF
-          </span>
+      {/* Field Environment Intelligence */}
+      <div className="overview-section">
+        <div className="overview-section-header">
+          <h3 className="overview-section-title">Field Environment Intelligence</h3>
+          <span className="overview-section-badge">Live · Open-Meteo · Nominatim · GBIF</span>
         </div>
         <WeatherWidget />
       </div>
 
-      <div className="main-grid" style={{ marginTop: 24 }}>
+      {/* Charts Grid */}
+      <div className="main-grid overview-charts-grid">
         <div className="card glass">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+          <div className="overview-chart-header">
             <div>
-              <h3 style={{ margin: 0 }}>Spatio-Temporal Progression</h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <h3 className="overview-chart-title">Spatio-Temporal Progression</h3>
+              <p className="overview-chart-sub">
                 {results?.temporal_available ? 'Multi-frame sequential analysis' : 'Single-scan logistic growth estimate (Simulated)'}
               </p>
             </div>
@@ -339,7 +321,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           {results && results.progression_data && results.progression_data.length > 0 ? (
             <div style={{ height: 320 }}>
               {!results.temporal_available && (
-                <div style={{ padding: '6px 12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 6, fontSize: '0.72rem', color: 'var(--warning)', marginBottom: 10 }}>
+                <div className="overview-temporal-notice">
                   ℹ️ Estimated trajectory from single observation. Historical validation requires multi-day sequential scans.
                 </div>
               )}
@@ -369,7 +351,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
 
         <div className="card glass">
-          <h3>Model Activation Features</h3>
+          <h3 className="overview-chart-title">Model Activation Features</h3>
           {results ? (
             <div style={{ height: 320 }}>
               <ResponsiveContainer width="100%" height={320} minWidth={0}>
@@ -387,68 +369,43 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
       </div>
 
-      {/* ── Frontier Intelligence & Hybrid AI Stack Card ── */}
-      <div className="card glass" style={{ marginTop: 24, padding: '20px 24px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {/* Hybrid AI Architecture Card */}
+      <div className="card glass overview-ai-stack">
+        <div className="overview-ai-stack__header">
+          <div className="overview-ai-stack__title-row">
             <Sparkles size={18} color="var(--primary)" />
-            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Hybrid AI Architecture: DINOv2 Foundation + ICAR Decision Engine</h3>
+            <h3 className="overview-ai-stack__title">Hybrid AI Architecture: DINOv2 Foundation + ICAR Decision Engine</h3>
           </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '3px 10px', borderRadius: 99,
-            background: 'rgba(16, 185, 129, 0.12)',
-            border: '1px solid rgba(16, 185, 129, 0.3)',
-            fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)',
-          }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--primary)', display: 'inline-block' }} />
+          <div className="overview-ai-status-pill">
+            <span className="overview-ai-status-dot" />
             {aiStatus?.display_name || 'ICAR Deterministic RAG Engine'}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Cpu size={14} color="var(--primary)" />
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Vision Backbone</span>
+        <div className="overview-ai-grid">
+          {[
+            { icon: Cpu, iconColor: 'var(--primary)', label: 'Vision Backbone', title: 'DINOv2 ViT-S/14', desc: '384-dim dense patch representation' },
+            { icon: Activity, iconColor: 'var(--accent)', label: 'Spatial Topology', title: 'Graph Transformer', desc: '64-Patch adaptive grid spatial clusters' },
+            { icon: Bot, iconColor: 'var(--primary)', label: 'Decision Engine', title: 'ICAR Grounded Advisory', desc: 'Evidence-based spatial containment & dosing' },
+            { icon: ShieldCheck, iconColor: 'var(--success)', label: 'Knowledge Base', title: 'ICAR-IRRI 2026 PoP', desc: 'FRAC codes, PHI & tank dilution math' },
+          ].map(({ icon: Icon, iconColor, label, title, desc }) => (
+            <div key={label} className="overview-ai-grid-item">
+              <div className="overview-ai-grid-item__label">
+                <Icon size={14} color={iconColor} />
+                <span>{label}</span>
+              </div>
+              <div className="overview-ai-grid-item__title">{title}</div>
+              <div className="overview-ai-grid-item__desc">{desc}</div>
             </div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>DINOv2 ViT-S/14</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>384-dim dense patch representation</div>
-          </div>
-
-          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Activity size={14} color="var(--accent)" />
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Spatial Topology</span>
-            </div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>Graph Transformer</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>64-Patch adaptive grid spatial clusters</div>
-          </div>
-
-          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Bot size={14} color="var(--primary)" />
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Decision Engine</span>
-            </div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>ICAR Grounded Advisory</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>Evidence-based spatial containment &amp; dosing</div>
-          </div>
-
-          <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <ShieldCheck size={14} color="var(--success)" />
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Knowledge Base</span>
-            </div>
-            <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>ICAR-IRRI 2026 PoP</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>FRAC codes, PHI &amp; tank dilution math</div>
-          </div>
+          ))}
         </div>
       </div>
 
+      {/* Skeleton while metrics load */}
       {!metrics && (
-        <div className="card glass" style={{ marginTop: 24, padding: '20px 24px' }}>
+        <div className="card glass overview-skeleton-card">
           <Skeleton width={200} height={20} style={{ marginBottom: 16 }} />
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
+          <div className="overview-skeleton-grid">
             <Skeleton width="100%" height={70} borderRadius={10} />
             <Skeleton width="100%" height={70} borderRadius={10} />
             <Skeleton width="100%" height={70} borderRadius={10} />
@@ -456,90 +413,55 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
       )}
 
+      {/* Model Validation & Confusion Matrix */}
       {metrics?.has_cm && (
-        <div className="card glass" style={{ marginTop: 24, padding: '20px 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="card glass overview-validation-card">
+          <div className="overview-validation-card__header">
+            <div className="overview-validation-card__title-row">
               <Award size={18} color="var(--primary)" />
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Model Validation &amp; Performance</h3>
+              <h3 className="overview-ai-stack__title">Model Validation & Performance</h3>
             </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-subtle)', padding: '3px 9px', borderRadius: 6 }}>
-              Evaluated on unseen test holdouts
-            </span>
+            <span className="overview-validation-card__badge">Evaluated on unseen test holdouts</span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20, alignItems: 'center' }}>
-            {/* Validation Metrics Grid */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+          <div className="overview-validation-grid">
+            <div className="overview-validation-metrics">
+              <p className="overview-validation-desc">
                 Multi-modal crop disease classification model evaluated with rigorous spatial cross-validation.
               </p>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10, marginTop: 4 }}>
-                <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Val Accuracy</div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--primary)', marginTop: 2 }}>
-                    {metrics.accuracy ? `${metrics.accuracy.toFixed(1)}%` : '98.4%'}
-                  </div>
-                </div>
 
-                <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Macro F1</div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--accent)', marginTop: 2 }}>
-                    {metrics.macro_f1 !== undefined ? metrics.macro_f1.toFixed(3) : '0.982'}
+              <div className="overview-metric-grid">
+                {[
+                  { label: 'Val Accuracy', value: metrics.accuracy ? `${metrics.accuracy.toFixed(1)}%` : '98.4%', color: 'var(--primary)' },
+                  { label: 'Macro F1', value: metrics.macro_f1 !== undefined ? metrics.macro_f1.toFixed(3) : '0.982', color: 'var(--accent)' },
+                  { label: 'ECE Score', value: metrics.ece_score !== undefined ? metrics.ece_score.toFixed(3) : '0.038', color: 'var(--success)' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="overview-metric-box">
+                    <div className="overview-metric-box__label">{label}</div>
+                    <div className="overview-metric-box__value" style={{ color }}>{value}</div>
                   </div>
-                </div>
-
-                <div style={{ background: 'var(--bg-subtle)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>ECE Score</div>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--success)', marginTop: 2 }}>
-                    {metrics.ece_score !== undefined ? metrics.ece_score.toFixed(3) : '0.038'}
-                  </div>
-                </div>
+                ))}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <div className="overview-calibration-note">
                 <CheckCircle2 size={13} color="var(--success)" />
                 <span>Calibrated confidence via Temperature Scaling</span>
               </div>
             </div>
 
-            {/* Compact Confusion Matrix Thumbnail */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div 
-                style={{ 
-                  position: 'relative', 
-                  maxWidth: 360, 
-                  width: '100%',
-                  borderRadius: 10, 
-                  overflow: 'hidden', 
-                  border: '1px solid var(--border)',
-                  background: 'var(--bg-subtle)',
-                  cursor: 'pointer'
-                }}
+            <div className="overview-cm-wrapper">
+              <div
+                className="overview-cm-thumbnail"
                 onClick={() => setIsZoomed(true)}
                 title="Click to zoom in"
               >
                 <img
                   src={`${(import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')}/model_weights/confusion_matrix.png`}
                   alt="Confusion Matrix"
-                  style={{ width: '100%', maxHeight: 240, objectFit: 'contain', display: 'block' }}
+                  className="overview-cm-img"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                 />
-                <div style={{
-                  position: 'absolute',
-                  bottom: 6,
-                  right: 6,
-                  background: 'rgba(15,23,42,0.8)',
-                  color: '#ffffff',
-                  padding: '3px 8px',
-                  borderRadius: 6,
-                  fontSize: '0.68rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  backdropFilter: 'blur(4px)'
-                }}>
+                <div className="overview-cm-zoom-hint">
                   <ZoomIn size={11} /> Click to enlarge
                 </div>
               </div>
@@ -550,49 +472,20 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
 
       {/* Fullscreen Zoom Modal */}
       {isZoomed && (
-        <div 
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.75)',
-            backdropFilter: 'blur(6px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20
-          }}
-          onClick={() => setIsZoomed(false)}
-        >
-          <div 
-            style={{
-              background: 'var(--bg-card)',
-              borderRadius: 16,
-              padding: 24,
-              maxWidth: 640,
-              width: '100%',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--shadow-lg)',
-              position: 'relative'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Confusion Matrix (Full Resolution)</h4>
-              <button 
-                className="btn-icon" 
-                onClick={() => setIsZoomed(false)}
-                style={{ padding: '4px 8px' }}
-              >
+        <div className="overview-modal-backdrop" onClick={() => setIsZoomed(false)}>
+          <div className="overview-modal-box" onClick={(e) => e.stopPropagation()}>
+            <div className="overview-modal-header">
+              <h4 className="overview-modal-title">Confusion Matrix (Full Resolution)</h4>
+              <button className="btn-icon" onClick={() => setIsZoomed(false)}>
                 <X size={16} />
               </button>
             </div>
             <img
               src={`${(import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')}/model_weights/confusion_matrix.png`}
               alt="Confusion Matrix Large"
-              style={{ width: '100%', maxHeight: 460, objectFit: 'contain', borderRadius: 8 }}
+              className="overview-modal-img"
             />
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 12, margin: 0 }}>
+            <p className="overview-modal-caption">
               Normalized classification distribution across 5 target classes.
             </p>
           </div>

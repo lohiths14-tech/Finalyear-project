@@ -23,7 +23,6 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
   offlineQueue,
   onSyncQueue,
   onScan,
-  onSelectSample,
   onNavigateHistory,
 }) => {
   return (
@@ -35,8 +34,8 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, background: 'var(--bg-card)', padding: '12px 16px', borderRadius: 14, border: '1px solid var(--border)' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{t.welcome}</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 20, background: 'var(--bg-card)', padding: '14px 16px', borderRadius: 14, border: '1px solid var(--border)' }}>
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>{t.welcome}</h2>
         <FarmerLanguageSelector lang={lang} onLanguageChange={onLanguageChange} />
       </div>
 

@@ -43,7 +43,7 @@ export const FarmerDosageCalculator: React.FC<FarmerDosageCalculatorProps> = ({
         <Calculator size={18} /> {t.dosageCalcTitle}
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
         <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t.landSize}</label>
         <input
           type="number"
@@ -51,12 +51,12 @@ export const FarmerDosageCalculator: React.FC<FarmerDosageCalculatorProps> = ({
           step="0.5"
           value={landArea}
           onChange={(e) => onLandAreaChange(Math.max(0.1, parseFloat(e.target.value) || 1.0))}
-          style={{ width: 70, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', fontWeight: 700 }}
+          style={{ width: 76, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontWeight: 700 }}
         />
         <select
           value={landUnit}
           onChange={(e) => onLandUnitChange(e.target.value)}
-          style={{ padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', fontWeight: 600 }}
+          style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg-card)', color: 'var(--text-primary)', fontWeight: 600 }}
         >
           <option value="acre">Acres (ಎಕರೆ)</option>
           <option value="guntha">Gunthas (ಗುಂಟೆ)</option>

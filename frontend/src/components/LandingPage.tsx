@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Leaf, MapPin, Activity, Zap, CheckCircle2, ShieldCheck,
-  ChevronRight, Volume2, Globe, Cpu, ArrowRight,
-  Sparkles, Layers, Eye, Smartphone, Database, Check
+  Leaf, MapPin, Activity, CheckCircle2, ShieldCheck,
+  Volume2, Cpu, ArrowRight,
+  Sparkles, Layers, Eye
 } from 'lucide-react';
 import apiClient from '../services/api';
 
@@ -18,13 +18,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
   useEffect(() => {
     apiClient.get('/health')
       .then((res) => {
-        setBackendOnline(res.data?.status === 'healthy' || res.data?.status === 'degraded' || true);
+        setBackendOnline(res.data?.status === 'healthy' || res.data?.status === 'degraded');
       })
       .catch(() => setBackendOnline(false));
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200 relative overflow-x-hidden">
       {/* Ambient background glow accents */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[520px] bg-gradient-to-b from-emerald-600/12 via-teal-700/5 to-transparent blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-[600px] -left-48 w-96 h-96 bg-emerald-500/8 rounded-full blur-3xl pointer-events-none -z-10" />

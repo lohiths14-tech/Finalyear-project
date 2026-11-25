@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Layers, MapPin, ZoomIn, Eye, Sparkles } from 'lucide-react';
 import type { GridCell } from '../../types';
 
 interface FieldGisMapProps {
@@ -19,7 +18,6 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
   heatmapBase64,
   gridData = [],
   diseaseType = 'Rice Blast',
-  averageSeverity = 35.0,
   lat: rawLat = 13.9299, // Shivamogga, Karnataka (PESITM / Malnad Agricultural Zone)
   lon: rawLon = 75.5681,
 }) => {

@@ -228,19 +228,19 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
   }, [result, dosageCalculations, landArea, landUnit]);
 
   return (
-    <div className="farmer-app-viewport" style={{ maxWidth: 520, margin: '0 auto', padding: '20px 16px' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, background: 'var(--bg-card)', padding: '12px 18px', borderRadius: 12, border: '1px solid var(--border)' }}>
-        <div>
-          <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>AgriPulse</h1>
-          <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+    <div className="farmer-app-viewport" style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 60px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, background: 'var(--bg-card)', padding: '10px 16px', borderRadius: 12, border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--text-primary)' }}>AgriPulse</span>
+          <span style={{ fontSize: '0.68rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'var(--primary-glow)', padding: '2px 8px', borderRadius: 99 }}>
             Farmer Mode · ರೈತ ಸೇವೆ
-          </div>
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', fontWeight: 600 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
           <div className={`status-dot ${backendOnline ? 'green' : 'red'}`} />
-          {backendOnline ? 'Online' : 'Offline'}
+          <span>{backendOnline ? 'Online' : 'Offline'}</span>
         </div>
-      </header>
+      </div>
 
       <AnimatePresence mode="wait">
         {scanning ? (
@@ -254,13 +254,13 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
             </p>
             {scanType === 'field' && (
               <div style={{
-                background: '#fefce8',
-                border: '1px solid #fef08a',
+                background: 'var(--warning-glow)',
+                border: '1px solid rgba(217, 119, 6, 0.35)',
                 borderRadius: 10,
                 padding: '10px 14px',
                 fontSize: '0.8rem',
-                color: '#854d0e',
-                maxWidth: 320,
+                color: 'var(--warning)',
+                maxWidth: 340,
                 margin: '0 auto',
                 lineHeight: 1.5,
               }}>

@@ -82,6 +82,8 @@ export interface FieldResult {
   disease_increasing_pct?: number;
   clusters?: Cluster[];
   confidence: number;
+  spatial_morans_i?: number;
+  alternatives?: Array<{ disease: string; confidence: number }>;
   scan_id?: string;
   farmer_friendly?: FarmerFriendly & { field_health_message?: string };
 }

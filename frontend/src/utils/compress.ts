@@ -3,12 +3,18 @@
  * Resizes images larger than 1024px to max 1024x1024 and compresses to JPEG.
  */
 export async function optimizeImageForUpload(file: File, maxDim = 1024): Promise<File> {
-  // If not an image, return original
-  if (!file.type.startsWith('image/')) {
+  // If not an image or already very small (<100KB), return original immediately
+  if (!file.type.startsWith('image/') || file.size < 100 * 1024) {
     return file;
   }
 
   return new Promise((resolve) => {
+    const safetyTimer = setTimeout(() => resolve(file), 3000);
+    const done = (out: File) => {
+      clearTimeout(safetyTimer);
+      resolve(out);
+    };
+
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (e) => {
@@ -19,7 +25,7 @@ export async function optimizeImageForUpload(file: File, maxDim = 1024): Promise
 
         // If already within bounds, don't re-compress if size is under 500KB
         if (width <= maxDim && height <= maxDim && file.size < 500 * 1024) {
-          resolve(file);
+          done(file);
           return;
         }
 
@@ -39,7 +45,7 @@ export async function optimizeImageForUpload(file: File, maxDim = 1024): Promise
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
-          resolve(file);
+          done(file);
           return;
         }
 
@@ -48,17 +54,17 @@ export async function optimizeImageForUpload(file: File, maxDim = 1024): Promise
           (blob) => {
             if (blob) {
               const cleanName = file.name.replace(/\.[^.]+$/, '') + '.jpg';
-              resolve(new File([blob], cleanName, { type: 'image/jpeg' }));
+              done(new File([blob], cleanName, { type: 'image/jpeg' }));
             } else {
-              resolve(file);
+              done(file);
             }
           },
           'image/jpeg',
           0.85
         );
       };
-      img.onerror = () => resolve(file);
+      img.onerror = () => done(file);
     };
-    reader.onerror = () => resolve(file);
+    reader.onerror = () => done(file);
   });
 }

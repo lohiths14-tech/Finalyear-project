@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Clock, AlertTriangle, ShieldCheck, Play, ArrowRight } from 'lucide-react';
+import { Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
 
 interface ProgressionSimulatorProps {
   initialSeverity: number;

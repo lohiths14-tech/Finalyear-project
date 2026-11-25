@@ -17,10 +17,10 @@ export const ClinicalCertificateModal: React.FC<ClinicalCertificateModalProps> =
   if (!scanResult) return null;
 
   const disease = scanResult.disease_type || 'Unknown';
-  const confidence = scanResult.confidence ? scanResult.confidence.toFixed(1) : '94.2';
+  const confidence = scanResult.confidence != null ? scanResult.confidence.toFixed(1) : 'N/A';
   const severity = ('severity' in scanResult ? scanResult.severity : scanResult.average_severity) || 0;
   const treatment = scanResult.treatment || 'Standard crop monitoring recommended.';
-  const scanId = scanResult.scan_id || 'CERT-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+  const scanId = scanResult.scan_id || `CERT-${disease.replace(/[^A-Z0-9]/gi, '').slice(0, 6).toUpperCase() || 'SCAN'}`;
   const dateStr = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'long',

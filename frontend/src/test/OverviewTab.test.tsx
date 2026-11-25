@@ -68,7 +68,8 @@ describe('OverviewTab', () => {
     await act(async () => {
       render(<OverviewTab lastScan={mockScan} />);
     });
-    expect(screen.getByText('70.0/100')).toBeInTheDocument();
+    expect(screen.getByText('70')).toBeInTheDocument();
+    expect(screen.getByText('/100')).toBeInTheDocument();
   });
 
   it('renders Smart Recommendation label', async () => {

@@ -37,7 +37,7 @@ describe('FieldMapTab', () => {
         />
       );
     });
-    expect(screen.getByText(/No Field Scan Loaded/i)).toBeInTheDocument();
-    expect(screen.getByText(/Drop a field image here or click to upload/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ready for Field-Level Spatial Diagnostics/i)).toBeInTheDocument();
+    expect(screen.getByText(/Choose Field Image/i)).toBeInTheDocument();
   });
 });

@@ -2,13 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
   Leaf, LayoutDashboard, Activity, Map as MapIcon,
-  Database, FlaskConical, WifiOff, Cpu, X, Home,
-  ChevronRight, ArrowLeft
+  Database, FlaskConical, Cpu, X, ArrowLeft, type LucideIcon
 } from 'lucide-react';
 
 interface Tab {
   id: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  icon: LucideIcon;
   label: string;
   desc?: string;
   section?: string;
@@ -46,19 +45,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile backdrop overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-950/95 border-r border-white/10 backdrop-blur-2xl flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        className={`fixed top-0 bottom-0 left-0 z-50 w-[260px] bg-[var(--bg-surface)] border-r border-[var(--border)] backdrop-blur-2xl flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
-        <div className="p-5 border-b border-white/10 flex items-center justify-between">
+        <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
           <div
             onClick={onGoHome}
             className="flex items-center gap-3 cursor-pointer group"
@@ -69,12 +68,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm text-white tracking-tight">AgriPulse</span>
-                <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-full font-mono">
+                <span className="font-bold text-sm text-[var(--text-primary)] tracking-tight">AgriPulse</span>
+                <span className="px-1.5 py-0.5 text-[9px] font-semibold bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 rounded-full font-mono">
                   AI
                 </span>
               </div>
-              <span className="text-[11px] text-slate-400 flex items-center gap-1 group-hover:text-emerald-400 transition-colors">
+              <span className="text-[11px] text-[var(--text-muted)] flex items-center gap-1 group-hover:text-emerald-500 transition-colors">
                 <ArrowLeft size={10} /> Back to Home
               </span>
             </div>
@@ -83,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {isOpen && (
             <button
               onClick={onClose}
-              className="lg:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900"
+              className="lg:hidden p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-hover)]"
               aria-label="Close menu"
             >
               <X size={18} />
@@ -94,8 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Navigation list */}
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {sections.map((section) => (
-            <div key={section} className="space-y-1">
-              <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 font-mono">
+            <div key={section} className="space-y-1.5">
+              <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] font-mono">
                 {section}
               </div>
 
@@ -107,31 +106,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all relative group cursor-pointer ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all relative group cursor-pointer border ${
                       active
-                        ? 'bg-emerald-500/15 text-white font-semibold border border-emerald-500/30 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                        ? 'bg-emerald-500/12 text-[var(--text-primary)] font-semibold border-emerald-500/30 shadow-sm'
+                        : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     <div
-                      className={`p-1.5 rounded-lg transition-colors ${
+                      className={`p-1.5 rounded-lg transition-colors shrink-0 ${
                         active
                           ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-                          : 'bg-slate-900 text-slate-400 group-hover:text-emerald-400 group-hover:bg-slate-850'
+                          : 'bg-[var(--bg-subtle)] text-[var(--text-muted)] group-hover:text-emerald-500'
                       }`}
                     >
                       <IconComponent size={16} strokeWidth={active ? 2.5 : 2} />
                     </div>
 
-                    <div className="flex-1 truncate">
-                      <div className="truncate text-slate-200">{tab.label}</div>
-                      {tab.desc && <div className="text-[10px] text-slate-500 truncate">{tab.desc}</div>}
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-semibold">{tab.label}</div>
+                      {tab.desc && <div className="text-[10px] text-[var(--text-muted)] truncate">{tab.desc}</div>}
                     </div>
 
                     {active && (
                       <motion.div
                         layoutId="active-nav-dot"
-                        className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400"
+                        className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400 shrink-0"
                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                       />
                     )}
@@ -143,11 +142,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
 
         {/* Footer System Status */}
-        <div className="p-4 border-t border-white/10 bg-slate-950/80">
-          <div className="p-3 rounded-xl bg-slate-900/80 border border-white/10 space-y-2">
+        <div className="p-4 border-t border-[var(--border)] bg-[var(--bg-surface)]">
+          <div className="p-3 rounded-xl bg-[var(--bg-subtle)] border border-[var(--border)] space-y-2">
             <div className="flex items-center gap-2">
               <span
-                className={`w-2 h-2 rounded-full ${
+                className={`w-2 h-2 rounded-full shrink-0 ${
                   backendOnline === null
                     ? 'bg-amber-400 animate-pulse'
                     : backendOnline
@@ -155,18 +154,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     : 'bg-rose-500'
                 }`}
               />
-              <span className="text-[11px] font-mono text-slate-300">
+              <span className="text-[11px] font-mono text-[var(--text-secondary)]">
                 {backendOnline === null
                   ? 'Connecting…'
                   : backendOnline
-                  ? 'Engine Online (INT8)'
-                  : 'Engine Offline'}
+                  ? 'Core Engine Online'
+                  : 'Backend Offline'}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">
-              <Cpu size={12} className="text-emerald-400" />
-              <span>DINOv2 + Graph Transformer</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-muted)] font-mono">
+              <Cpu size={12} className="text-emerald-500 shrink-0" />
+              <span className="truncate">DINOv2 + Graph Transformer</span>
             </div>
           </div>
         </div>

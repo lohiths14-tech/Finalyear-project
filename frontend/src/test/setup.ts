@@ -29,7 +29,6 @@ if (typeof window !== 'undefined') {
     onvoiceschanged: null,
   } as unknown as SpeechSynthesis;
 
-  // @ts-expect-error Mock SpeechSynthesisUtterance constructor
   window.SpeechSynthesisUtterance = vi.fn().mockImplementation((text: string) => ({
     text,
     voice: null,

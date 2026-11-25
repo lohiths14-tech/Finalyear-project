@@ -150,18 +150,17 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
   return (
     <div className="tab-viewport">
       <div className="main-grid">
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 18, background: 'var(--bg-card)', padding: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>
+        <div className="card leaf-upload-card">
+          <div className="leaf-upload-card__header">
+            <h3 className="leaf-upload-card__title">
               <FlaskConical size={20} color="var(--primary)" /> Leaf Micro-Diagnostic
             </h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="leaf-upload-card__actions">
               <button
                 type="button"
-                className="btn-icon"
+                className="btn-icon btn-icon--primary"
                 onClick={handleLoadDemo}
                 disabled={scanning}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderColor: 'var(--primary)', color: 'var(--primary)', background: 'var(--primary-glow)' }}
                 title="Load verified leaf pathology sample"
               >
                 <Sparkles size={14} /> Demo Leaf
@@ -171,32 +170,23 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                 className="btn-icon"
                 onClick={() => setIsCameraOpen(true)}
                 disabled={scanning}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}
                 title="Open live camera scanner"
               >
                 <Camera size={14} /> Live Camera
               </button>
               {result && (
                 <>
-                  <button 
-                    className="btn-icon" 
-                    onClick={() => setIsCertOpen(true)} 
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderColor: 'var(--primary)', color: 'var(--primary)' }}
-                  >
+                  <button className="btn-icon btn-icon--primary" onClick={() => setIsCertOpen(true)}>
                     <Award size={14} /> Certificate
                   </button>
-                  <button 
-                    className="btn-icon" 
-                    onClick={handlePrint} 
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px' }}
-                  >
+                  <button className="btn-icon" onClick={handlePrint}>
                     <Printer size={14} /> Print
                   </button>
                 </>
               )}
             </div>
           </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', margin: 0 }}>
+          <p className="leaf-upload-card__desc">
             Upload a clear, close-up leaf photograph for instant spectral pathogen profiling and ICAR agronomic guidance.
           </p>
 
@@ -223,12 +213,12 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
           </label>
 
           {preview && (
-            <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)' }}>
-              <img src={preview} alt="Leaf preview" style={{ width: '100%', maxHeight: 260, objectFit: 'cover' }} />
+            <div className="leaf-preview-wrapper">
+              <img src={preview} alt="Leaf preview" className="leaf-preview-img" />
             </div>
           )}
 
-          <div style={{ background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          <div className="leaf-pro-tip">
             💡 <strong>Field Pro-Tip:</strong> Photograph the boundary between healthy and infected leaf tissue under diffuse morning light for maximum diagnostic precision.
           </div>
         </div>
