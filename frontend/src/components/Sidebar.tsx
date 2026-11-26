@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Leaf, LayoutDashboard, Activity, Map as MapIcon,
@@ -39,6 +39,55 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onGoHome,
 }) => {
   const sections = Array.from(new Set(TABS.map((t) => t.section)));
+  const asideRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const media = window.matchMedia?.('(min-width: 1024px)');
+    if (!media) return;
+    const updateDesktop = () => setIsDesktop(media.matches);
+    updateDesktop();
+    media.addEventListener?.('change', updateDesktop);
+    return () => media.removeEventListener?.('change', updateDesktop);
+  }, []);
+
+  useEffect(() => {
+    asideRef.current?.toggleAttribute('inert', !isOpen && !isDesktop);
+  }, [isOpen, isDesktop]);
+
+  useEffect(() => {
+    if (!isOpen || isDesktop) return;
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab' || !asideRef.current) return;
+      const focusable = Array.from(asideRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isDesktop]);
 
   return (
     <>
@@ -52,15 +101,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside
+        id="primary-navigation"
+        ref={asideRef}
+        role={isOpen && !isDesktop ? 'dialog' : undefined}
+        aria-label="Main navigation"
+        aria-modal={isOpen && !isDesktop ? true : undefined}
+        aria-hidden={!isOpen && !isDesktop}
         className={`fixed top-0 bottom-0 left-0 z-50 w-[260px] bg-[var(--bg-surface)] border-r border-[var(--border)] backdrop-blur-2xl flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand Header */}
         <div className="p-5 border-b border-[var(--border)] flex items-center justify-between">
-          <div
+          <button
+            type="button"
             onClick={onGoHome}
-            className="flex items-center gap-3 cursor-pointer group"
+            className="flex items-center gap-3 cursor-pointer group border-0 bg-transparent p-0 text-left"
             title="Return to Landing Page"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
@@ -77,10 +133,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <ArrowLeft size={10} /> Back to Home
               </span>
             </div>
-          </div>
+          </button>
 
           {isOpen && (
             <button
+              ref={closeButtonRef}
+              type="button"
               onClick={onClose}
               className="lg:hidden p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-hover)]"
               aria-label="Close menu"
@@ -91,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Navigation list */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav aria-label="Dashboard sections" className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
           {sections.map((section) => (
             <div key={section} className="space-y-1.5">
               <div className="px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] font-mono">
@@ -106,6 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id)}
+                    aria-current={active ? 'page' : undefined}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-xs font-medium transition-all relative group cursor-pointer border ${
                       active
                         ? 'bg-emerald-500/12 text-[var(--text-primary)] font-semibold border-emerald-500/30 shadow-sm'

@@ -125,10 +125,10 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
       const file = new File([blob], 'rice_blast_leaf.jpg', { type: 'image/jpeg' });
       await processFile(file);
     } catch (e) {
-      console.error('Failed to load demo leaf:', e);
+      addToast('Could not load the demo leaf image. Please try uploading an image instead.', 'error');
       setScanning(false);
     }
-  }, [processFile]);
+  }, [addToast, processFile]);
 
   const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
@@ -191,8 +191,8 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
           </p>
 
           <label
+            htmlFor="leaf-image-upload"
             className={`upload-zone ${dragOver ? 'drag-over' : ''} ${!backendOnline ? 'btn-disabled' : ''}`}
-            aria-label="Upload leaf image"
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -203,12 +203,12 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
             </span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>JPEG · PNG · WEBP · max 20 MB</span>
             <input
+              id="leaf-image-upload"
+              className="sr-only"
               type="file"
-              hidden
               accept="image/*"
               disabled={scanning || !backendOnline}
               onChange={handleUpload}
-              aria-hidden="true"
             />
           </label>
 
@@ -471,7 +471,7 @@ export default function LeafScanTab({ addToast, backendOnline, onScanComplete, l
                     <div className="scientific-drawer-content">
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
                         <div>
-                          <span style={{ color: 'var(--text-muted)' }}>Calibrated ECE Score:</span><br/>
+                          <span style={{ color: 'var(--text-muted)' }}>Model calibration benchmark (ECE):</span><br/>
                           <strong style={{ color: 'var(--primary)' }}>&lt; 0.038 (Temperature Scaled)</strong>
                         </div>
                         <div>

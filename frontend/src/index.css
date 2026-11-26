@@ -264,6 +264,12 @@
 
 .top-nav-right { display: flex; align-items: center; gap: 10px; }
 
+@media (max-width: 640px) {
+  .top-navbar .health-sentinel { padding-left: 10px; padding-right: 10px; }
+  .top-navbar .health-sentinel__text,
+  .top-navbar .health-sentinel__latency { display: none; }
+}
+
 .ai-badge {
   display: inline-flex;
   align-items: center;
@@ -1359,6 +1365,11 @@
   background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
 }
 
+.upload-zone:focus-within {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
 .upload-zone::before {
   content: '';
   position: absolute;
@@ -2231,6 +2242,12 @@ a:focus-visible {
 .history-filter-group .btn-icon {
   font-size: 0.72rem;
   padding: 5px 9px;
+}
+
+.history-load-error {
+  margin: 0 0 12px;
+  color: var(--danger);
+  font-size: 0.85rem;
 }
 
 .history-skeleton {

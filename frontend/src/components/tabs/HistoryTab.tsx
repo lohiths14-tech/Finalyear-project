@@ -14,6 +14,7 @@ interface HistoryTabProps {
 export default function HistoryTab({ addToast }: HistoryTabProps) {
   const [scans, setScans] = useState<ScanHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState<ScanHistoryItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'field' | 'leaf'>('all');
   const [search, setSearch] = useState('');
@@ -21,10 +22,12 @@ export default function HistoryTab({ addToast }: HistoryTabProps) {
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const { data } = await apiClient.get<ScanHistoryItem[]>('/history?limit=100');
       setScans(data);
     } catch {
+      setLoadError(true);
       addToast('Could not load scan history.', 'error');
     } finally {
       setLoading(false);
@@ -156,12 +159,22 @@ export default function HistoryTab({ addToast }: HistoryTabProps) {
             </div>
           </div>
 
+          {loadError && scans.length > 0 && (
+            <p role="alert" className="history-load-error">Could not refresh scan history. Previously loaded records are still shown.</p>
+          )}
           {loading ? (
-            <div className="history-skeleton">
+            <div className="history-skeleton" role="status" aria-label="Loading scan history" aria-busy="true">
               <Skeleton width="100%" height={36} borderRadius={8} />
               <Skeleton width="100%" height={36} borderRadius={8} />
               <Skeleton width="100%" height={36} borderRadius={8} />
               <Skeleton width="100%" height={36} borderRadius={8} />
+            </div>
+          ) : loadError && scans.length === 0 ? (
+            <div className="empty-state history-empty" role="alert">
+              <Database size={40} color="var(--text-muted)" style={{ opacity: 0.7, marginBottom: 8 }} />
+              <h3>Scan history unavailable</h3>
+              <p>Could not load saved records. Check your connection and try again.</p>
+              <button className="btn-icon" onClick={fetchHistory}>Try again</button>
             </div>
           ) : filtered.length === 0 ? (
             <div className="empty-state history-empty">
