@@ -48,6 +48,8 @@ interface ModelMetrics {
   has_cm: boolean;
 }
 
+type MetricsStatus = 'loading' | 'available' | 'unavailable';
+
 interface ClassesJson {
   validation_accuracy?: number;
   macro_f1?: number;
@@ -57,6 +59,7 @@ interface ClassesJson {
 
 export default function OverviewTab({ lastScan }: OverviewTabProps) {
   const [metrics, setMetrics] = useState<ModelMetrics | null>(null);
+  const [metricsStatus, setMetricsStatus] = useState<MetricsStatus>('loading');
   const [isZoomed, setIsZoomed] = useState(false);
   const [aiStatus, setAiStatus] = useState<AiProviderStatus | null>(null);
 
@@ -67,21 +70,30 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
   useEffect(() => {
     const API_BASE = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
     fetch(`${API_BASE}/model_weights/classes.json`)
-      .then((res) => res.json())
-      .then((data: ClassesJson) => {
-        if (data.validation_accuracy !== undefined) {
-          setMetrics({
-            accuracy: data.validation_accuracy,
-            macro_f1: data.macro_f1,
-            ece_score: data.ece_score,
-            has_cm: data.has_cm ?? false
-          });
-        }
+      .then((res) => {
+        if (!res.ok) throw new Error('Model benchmark request failed');
+        return res.json();
       })
-      .catch(() => console.error("Could not fetch model metrics"));
+      .then((data: ClassesJson) => {
+        if (data.validation_accuracy === undefined) {
+          setMetricsStatus('unavailable');
+          return;
+        }
+        setMetrics({
+          accuracy: data.validation_accuracy,
+          macro_f1: data.macro_f1,
+          ece_score: data.ece_score,
+          has_cm: data.has_cm ?? false
+        });
+        setMetricsStatus('available');
+      })
+      .catch(() => setMetricsStatus('unavailable'));
   }, []);
 
   const results = lastScan;
+  const measuredProgression = results?.temporal_available
+    ? results.progression_data.filter((point) => point.simulated !== true)
+    : [];
 
   let distributionData: Array<{ name: string; value: number; color: string }> = [];
   let smartRecommendation = '';
@@ -142,13 +154,17 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           <div className="overview-status-banner__left">
             <Sparkles size={18} className="overview-status-banner__icon" />
             <div>
-              <strong className="overview-status-banner__title">System Benchmark Baseline Active</strong>
+              <strong className="overview-status-banner__title">No live field scan yet</strong>
               <div className="overview-status-banner__sub">
-                MobileNetV2 Paddy Vision Student ONNX INT8 (88.8% Val Acc · Macro F1: 0.867 · ECE: 0.031). Awaiting live field scan.
+                {metricsStatus === 'loading'
+                  ? 'Loading model benchmark data…'
+                  : metricsStatus === 'available'
+                  ? 'Model validation benchmarks are shown separately from live field measurements below.'
+                  : 'Model benchmark data unavailable. Run a field scan to see measured field data.'}
               </div>
             </div>
           </div>
-          <span className="overview-status-banner__badge">● Core Engine Online</span>
+          <span className="overview-status-banner__badge">No scan data</span>
         </div>
       )}
 
@@ -166,21 +182,18 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                 <NumberFlow value={parseFloat((100 - results.average_severity).toFixed(1))} />
                 <span>/100</span>
               </>
-            ) : (
-              <>
-                <NumberFlow value={91.8} />
-                <span>/100</span>
-              </>
-            )}
+            ) : 'Data unavailable'}
           </h3>
-          <div className="progress-bar">
-            <motion.div
-              className="progress-fill"
-              initial={{ width: 0 }}
-              animate={{ width: results ? `${100 - results.average_severity}%` : '91.8%' }}
-              style={{ background: 'var(--success)' }}
-            />
-          </div>
+          {results && (
+            <div className="progress-bar" aria-label="Field health score">
+              <motion.div
+                className="progress-fill"
+                initial={{ width: 0 }}
+                animate={{ width: `${100 - results.average_severity}%` }}
+                style={{ background: 'var(--success)' }}
+              />
+            </div>
+          )}
           {results && trendDirection && (
             <div className="overview-trend-row">
               <span>Trend: {trendDirection}</span>
@@ -191,7 +204,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           )}
           {metrics && (
             <div className="overview-val-accuracy">
-              Val Accuracy: <NumberFlow value={parseFloat(metrics.accuracy.toFixed(1))} />%
+              Model validation benchmark: <NumberFlow value={parseFloat(metrics.accuracy.toFixed(1))} />%
             </div>
           )}
         </div>
@@ -201,7 +214,8 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           <div className="card-header">
             <p className="card-label">Dominant Disease</p>
             {results?.disease_type === 'Healthy' ? (
-              <ShieldCheck size={18} color="var(--success)" />
+            <ShieldCheck size={18} color={results ? 'var(--success)' : 'var(--text-muted)'} />
+
             ) : results?.disease_type?.includes('Unknown') ? (
               <AlertTriangle size={18} color="var(--warning)" />
             ) : (
@@ -218,14 +232,14 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                     : results.disease_type?.includes('Unknown')
                     ? 'var(--warning)'
                     : 'var(--danger)'
-                  : 'var(--success)'
+                  : 'var(--text-muted)'
               }}
             >
               {results
                 ? (results.disease_type?.includes('Unknown') && results.alternatives?.[0]
                     ? `${results.alternatives[0].disease.split(' (')[0]} (Tentative)`
                     : results.disease_type)
-                : 'Paddy Doctor Benchmark'}
+                : 'Data unavailable'}
             </h3>
             {results && results.confidence !== undefined && (
               <span
@@ -250,7 +264,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               'Taxonomic Classification'
             ) : 'No active field scan'}
           </p>
-          <p className="card-sub">{results ? `Coverage: ${coverageStr}` : 'Waiting for input…'}</p>
+          <p className="card-sub">{results ? `Coverage: ${coverageStr}` : 'Waiting for input — no live field scan data.'}</p>
           {results && distributionData.length > 0 && (
             <div className="overview-pie-wrapper">
               <div style={{ height: '65px' }}>
@@ -284,7 +298,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <AlertTriangle size={18} color="var(--warning)" />
           </div>
           <p className="card-sub treatment-text overview-recommendation-text">
-            {results ? smartRecommendation : 'System benchmark baseline active. Load a field scan to view live ICAR agronomic guidance.'}
+            {results ? smartRecommendation : 'No field scan is available. Upload a field image to view measured data and agronomic guidance.'}
           </p>
           {results && (
             <span className={`risk-badge risk-${results.spread_risk?.toLowerCase()}`}>
@@ -310,23 +324,19 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <div>
               <h3 className="overview-chart-title">Spatio-Temporal Progression</h3>
               <p className="overview-chart-sub">
-                {results?.temporal_available ? 'Multi-frame sequential analysis' : 'Single-scan logistic growth estimate (Simulated)'}
+                Observed measurements and model estimates are labeled separately.
               </p>
             </div>
             <div className="chart-legend">
-              <span className="legend-item"><div className="dot blue" /> Predicted</span>
-              <span className="legend-item"><div className="dot green" /> Actual</span>
+              <span className="legend-item"><span className="dot blue" /> Model estimate</span>
+              <span className="legend-item"><span className="dot green" /> Observed</span>
             </div>
           </div>
-          {results && results.progression_data && results.progression_data.length > 0 ? (
+          {measuredProgression.length > 0 ? (
             <div style={{ height: 320 }}>
-              {!results.temporal_available && (
-                <div className="overview-temporal-notice">
-                  ℹ️ Estimated trajectory from single observation. Historical validation requires multi-day sequential scans.
-                </div>
-              )}
               <ResponsiveContainer width="100%" height={320} minWidth={0}>
-                <AreaChart data={results.progression_data}>
+                <AreaChart data={measuredProgression}>
+
                   <defs>
                     <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
@@ -346,7 +356,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               </ResponsiveContainer>
             </div>
           ) : (
-            <EmptyState icon={Activity} message="Upload more field images over time to see temporal progression" />
+            <EmptyState icon={Activity} message="No measured temporal data available. Single-scan estimates are hidden." />
           )}
         </div>
 
@@ -378,7 +388,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           </div>
           <div className="overview-ai-status-pill">
             <span className="overview-ai-status-dot" />
-            {aiStatus?.display_name || 'ICAR Deterministic RAG Engine'}
+            {aiStatus?.display_name || 'AI provider status unavailable'}
           </div>
         </div>
 
@@ -401,15 +411,21 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
       </div>
 
-      {/* Skeleton while metrics load */}
-      {!metrics && (
-        <div className="card glass overview-skeleton-card">
+      {metricsStatus === 'loading' && (
+        <div className="card glass overview-skeleton-card" role="status" aria-label="Loading model benchmark data" aria-busy="true">
           <Skeleton width={200} height={20} style={{ marginBottom: 16 }} />
           <div className="overview-skeleton-grid">
             <Skeleton width="100%" height={70} borderRadius={10} />
             <Skeleton width="100%" height={70} borderRadius={10} />
             <Skeleton width="100%" height={70} borderRadius={10} />
           </div>
+        </div>
+      )}
+
+      {metricsStatus === 'unavailable' && (
+        <div className="card glass" role="status">
+          <h3 className="overview-ai-stack__title">Model benchmark data unavailable</h3>
+          <p className="overview-validation-desc">Live field measurements remain separate from model evaluation results.</p>
         </div>
       )}
 
@@ -426,15 +442,16 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
 
           <div className="overview-validation-grid">
             <div className="overview-validation-metrics">
-              <p className="overview-validation-desc">
-                Multi-modal crop disease classification model evaluated with rigorous spatial cross-validation.
-              </p>
+                <p className="overview-validation-desc">
+                  Model evaluation benchmark, not a live field measurement. Metrics are loaded from the backend benchmark file.
+                </p>
+
 
               <div className="overview-metric-grid">
                 {[
-                  { label: 'Val Accuracy', value: metrics.accuracy ? `${metrics.accuracy.toFixed(1)}%` : '98.4%', color: 'var(--primary)' },
-                  { label: 'Macro F1', value: metrics.macro_f1 !== undefined ? metrics.macro_f1.toFixed(3) : '0.982', color: 'var(--accent)' },
-                  { label: 'ECE Score', value: metrics.ece_score !== undefined ? metrics.ece_score.toFixed(3) : '0.038', color: 'var(--success)' },
+                  { label: 'Validation Accuracy', value: `${metrics.accuracy.toFixed(1)}%`, color: 'var(--primary)' },
+                  { label: 'Macro F1', value: metrics.macro_f1 !== undefined ? metrics.macro_f1.toFixed(3) : 'Data unavailable', color: 'var(--accent)' },
+                  { label: 'ECE Score', value: metrics.ece_score !== undefined ? metrics.ece_score.toFixed(3) : 'Data unavailable', color: 'var(--success)' },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="overview-metric-box">
                     <div className="overview-metric-box__label">{label}</div>

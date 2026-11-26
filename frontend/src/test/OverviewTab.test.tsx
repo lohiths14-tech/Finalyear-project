@@ -29,6 +29,30 @@ describe('OverviewTab', () => {
       render(<OverviewTab lastScan={null} />);
     });
     expect(screen.getByText(/Waiting for input/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Data unavailable').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/91\.8/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Paddy Doctor Benchmark/)).not.toBeInTheDocument();
+  });
+
+  it('does not render simulated progression estimates as measured history', async () => {
+    const mockScan = {
+      disease_type: 'Rice Blast',
+      average_severity: 60,
+      infection_rate: 25,
+      spread_risk: 'Medium',
+      confidence: 85,
+      treatment: 'Apply fungicide',
+      veg_coverage: 70,
+      grid_data: [],
+      temporal_available: false,
+      progression_data: [{ day: 'Day 1', actual: 30, predicted: 30, simulated: true, point_type: 'estimated_history' }],
+      spectral_radar: [],
+    };
+    await act(async () => {
+      render(<OverviewTab lastScan={mockScan} />);
+    });
+    expect(screen.getByText(/Single-scan estimates are hidden/i)).toBeInTheDocument();
+    expect(screen.queryByText('Day 1')).not.toBeInTheDocument();
   });
 
   it('renders disease name in the Dominant Disease card when lastScan is provided', async () => {

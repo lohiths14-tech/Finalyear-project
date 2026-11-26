@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Leaf, Sprout, ArrowLeftRight, Sparkles, Moon, Sun, Menu, Smartphone, Home } from 'lucide-react';
 import LandingPage from './components/LandingPage';
@@ -77,7 +77,7 @@ function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin, onGuest }: LoginScr
         {/* Form */}
         <div className="login-form">
           <div className="form-group">
-            <label className="form-label">X-API-Key (Optional)</label>
+            <label className="form-label" htmlFor="api-key-input">X-API-Key (Optional)</label>
             <input
               id="api-key-input"
               type="text"
@@ -85,7 +85,7 @@ function LoginScreen({ apiKeyInput, setApiKeyInput, onLogin, onGuest }: LoginScr
               placeholder="e.g. demo (or leave blank for guest)…"
               value={apiKeyInput}
               onChange={(e) => setApiKeyInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') onLogin(); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing && e.keyCode !== 229) onLogin(); }}
               autoFocus
             />
           </div>
@@ -123,9 +123,14 @@ const TAB_TITLES: Record<string, { title: string; subtitle: string }> = {
 
 let toastIdCounter = 0;
 
+const isValidTab = (tab: string | null): tab is string => Boolean(tab && Object.prototype.hasOwnProperty.call(TAB_TITLES, tab));
+
 function App() {
   const [viewMode, setViewMode] = useState<'landing' | 'app'>('app');
-  const [activeTab, setActiveTab] = useState('field');
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    return isValidTab(tab) ? tab : 'field';
+  });
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [lastScan, setLastScan] = useState<FieldResult | null>(null);
@@ -135,11 +140,21 @@ function App() {
   const [isFarmerMode, setIsFarmerMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('agripulse-theme');
     return saved ? saved === 'dark' : true;
   });
+
+  useEffect(() => {
+    const syncTabFromUrl = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      setActiveTab(isValidTab(tab) ? tab : 'field');
+    };
+    window.addEventListener('popstate', syncTabFromUrl);
+    return () => window.removeEventListener('popstate', syncTabFromUrl);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -177,6 +192,22 @@ function App() {
 
   const removeToast = (id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleTabChange = (id: string) => {
+    if (!isValidTab(id)) return;
+    setActiveTab(id);
+    const params = new URLSearchParams(window.location.search);
+    if (id === 'field') params.delete('tab');
+    else params.set('tab', id);
+    const query = params.toString();
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`;
+    window.history.pushState({ tab: id }, '', nextUrl);
+  };
+
+  const closeMobileSidebar = () => {
+    setSidebarOpen(false);
+    if (window.matchMedia?.('(max-width: 1023px)')?.matches) mobileMenuButtonRef.current?.focus();
   };
 
   useEffect(() => {
@@ -327,10 +358,10 @@ function App() {
             {/* Left Sidebar */}
             <Sidebar
               activeTab={activeTab}
-              setActiveTab={(id) => { setActiveTab(id); setSidebarOpen(false); }}
+              setActiveTab={(id) => { handleTabChange(id); closeMobileSidebar(); }}
               backendOnline={backendOnline}
               isOpen={sidebarOpen}
-              onClose={() => setSidebarOpen(false)}
+              onClose={closeMobileSidebar}
               onGoHome={() => setViewMode('landing')}
             />
 
@@ -338,11 +369,14 @@ function App() {
             <div className="main-wrapper">
               {/* Top Navigation Bar */}
               <header className="top-navbar">
-                <div className="top-nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div className="top-nav-left" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <button
+                    ref={mobileMenuButtonRef}
                     className="hamburger-btn"
                     onClick={() => setSidebarOpen(true)}
                     aria-label="Open navigation"
+                    aria-expanded={sidebarOpen}
+                    aria-controls="primary-navigation"
                   >
                     <Menu size={20} />
                   </button>

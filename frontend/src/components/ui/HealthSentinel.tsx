@@ -36,10 +36,12 @@ export const HealthSentinel: React.FC<HealthSentinelProps> = ({ onStatusChange }
   }, []);
 
   return (
-    <div
+    <button
+      type="button"
       onClick={checkHealth}
       title="Click to re-ping AI Core"
-      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all duration-200 border
+      aria-label={`AI Core ${status}${latencyMs !== null ? `, ${latencyMs} milliseconds` : ''}. Activate to recheck.`}
+      className="health-sentinel inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer transition-all duration-200 border
         bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-xs
         border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
     >
@@ -49,12 +51,12 @@ export const HealthSentinel: React.FC<HealthSentinelProps> = ({ onStatusChange }
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
+          <span className="health-sentinel__text text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
             <Cpu size={13} />
             AI Core: Ready
           </span>
           {latencyMs !== null && (
-            <span className="text-[10px] text-slate-400 font-mono">
+            <span className="health-sentinel__latency text-[10px] text-slate-400 font-mono">
               {latencyMs}ms
             </span>
           )}
@@ -67,7 +69,7 @@ export const HealthSentinel: React.FC<HealthSentinelProps> = ({ onStatusChange }
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
           </span>
-          <span className="text-amber-700 dark:text-amber-400 font-medium animate-pulse flex items-center gap-1">
+          <span className="health-sentinel__text text-amber-700 dark:text-amber-400 font-medium animate-pulse flex items-center gap-1">
             <RefreshCw size={12} className="animate-spin" />
             Waking Engine (~20s)...
           </span>
@@ -77,12 +79,12 @@ export const HealthSentinel: React.FC<HealthSentinelProps> = ({ onStatusChange }
       {(status === 'offline' || status === 'checking') && (
         <>
           <span className="inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
-          <span className="text-slate-500 dark:text-slate-400 font-medium">
+          <span className="health-sentinel__text text-slate-500 dark:text-slate-400 font-medium">
             {status === 'checking' ? 'Connecting…' : 'AI Core: Standby'}
           </span>
         </>
       )}
-    </div>
+    </button>
   );
 };
 export default HealthSentinel;
