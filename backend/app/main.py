@@ -345,7 +345,9 @@ async def health_check(request: Request):
     # Hardware & Memory diagnostics
     device_name = str(svc.device) if svc else "initializing"
     loaded_weights_map = settings.get_model_paths() or {}
-    loaded_keys = list(getattr(svc, "loaded_models", set())) if svc else []
+    pt_keys = set(getattr(svc, "loaded_models", set())) if svc else set()
+    onnx_keys = set(getattr(svc, "ort_sessions", {}).keys()) if svc else set()
+    loaded_keys = sorted(pt_keys | onnx_keys)
 
     memory_stats = {}
     if torch.cuda.is_available() and "cuda" in device_name:
@@ -361,9 +363,13 @@ async def health_check(request: Request):
         "platform": "AgriPulse 2.0 Enterprise Agricultural Intelligence",
         "device": device_name,
         "models_loaded": svc is not None,
-        "weights_loaded": len(loaded_keys) > 0 or len(loaded_weights_map) > 0,
+        "weights_loaded": (
+            len(loaded_keys) > 0 or len(loaded_weights_map) > 0
+        ),
         "active_models": loaded_keys,
-        "available_weights": list(loaded_weights_map.keys()),
+        "available_weights": sorted(
+            set(loaded_weights_map.keys()) | onnx_keys
+        ),
         "database": "connected" if db_ok else "error",
         "telemetry": memory_stats,
     }
