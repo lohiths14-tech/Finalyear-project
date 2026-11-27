@@ -1,6 +1,7 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import FarmerMode, { I18N } from '../components/FarmerMode';
+import apiClient from '../services/api';
 
 vi.mock('../services/api', () => ({
   default: {
@@ -13,7 +14,10 @@ const addToast = vi.fn();
 
 describe('FarmerMode Component & Accessibility', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
     vi.clearAllMocks();
+    localStorage.removeItem('agri_offline_queue');
+    localStorage.removeItem('agri_uncertain_queue');
   });
 
   it('renders the app title and farmer badge', () => {
@@ -50,6 +54,164 @@ describe('FarmerMode Component & Accessibility', () => {
 
     fireEvent.change(select, { target: { value: 'hi' } });
     expect(screen.getByText(I18N.hi.welcome)).toBeInTheDocument();
+  });
+
+  it('removes queued scans only after the server returns a valid result', async () => {
+    const queuedScan = { id: 101, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { disease_type: 'Rice Blast', severity: 35, confidence: 82, status: 'Disease Detected', treatment: 'Observe symptoms.' },
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([]);
+      expect(addToast).toHaveBeenCalledWith('Successfully synced 1 offline scans.', 'success');
+    });
+  });
+
+  it('does not submit the same queued scan twice during concurrent sync clicks', async () => {
+    const queuedScan = { id: 103, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockResolvedValue({
+      data: { disease_type: 'Rice Blast', severity: 35, confidence: 82, status: 'Disease Detected', treatment: 'Observe symptoms.' },
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    const syncButton = screen.getByText(/Sync Offline Scans/i);
+    fireEvent.click(syncButton);
+    fireEvent.click(syncButton);
+
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps an incomplete leaf response queued and requires an explicit retry after unknown delivery', async () => {
+    const queuedScan = { id: 102, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockResolvedValue({ data: { disease_type: 'Rice Blast', severity: 35, confidence: 82, status: 'Disease Detected' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => expect(screen.getByText(/server may already have processed them/i)).toBeInTheDocument());
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+    expect(apiClient.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an incomplete field response without removing the queued scan', async () => {
+    const queuedScan = { id: 104, type: 'field', name: 'saved-field.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockResolvedValue({ data: {
+      disease_type: 'Rice Blast', average_severity: 35, infection_rate: 20, spread_risk: 'low',
+      treatment: 'Observe symptoms.', veg_coverage: 70, confidence: 82,
+      grid_data: [], progression_data: [],
+    } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => expect(screen.getByText(/unknown delivery status/i)).toBeInTheDocument());
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+  });
+
+  it.each([Number.NaN, Number.POSITIVE_INFINITY])('rejects invalid leaf numeric values (%s)', async (invalidValue) => {
+    const queuedScan = { id: 105, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockResolvedValue({ data: {
+      disease_type: 'Rice Blast', severity: invalidValue, confidence: 82,
+      status: 'Disease Detected', treatment: 'Observe symptoms.',
+    } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => expect(screen.getByText(/unknown delivery status/i)).toBeInTheDocument());
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+  });
+
+  it('classifies HTTP 4xx as a definite failure and leaves the scan queued', async () => {
+    const queuedScan = { id: 107, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockRejectedValue({ response: { status: 422 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => expect(addToast).toHaveBeenCalledWith('0 synced, 1 failed; failed scans remain queued.', 'warning', 6000));
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+    expect(screen.queryByRole('button', { name: /Explicitly retry uncertain scans/i })).not.toBeInTheDocument();
+  });
+
+  it('classifies HTTP 5xx as uncertain and does not resend on a subsequent sync', async () => {
+    const queuedScan = { id: 108, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockRejectedValue({ response: { status: 503 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Explicitly retry uncertain scans/i })).toBeInTheDocument());
+    expect(screen.getByText(/server may already have processed them/i)).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
+  });
+
+  it('clears uncertain status when an explicit retry receives HTTP 4xx but keeps the scan queued', async () => {
+    const queuedScan = { id: 109, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post)
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockRejectedValueOnce({ response: { status: 422 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    const retryButton = await screen.findByRole('button', { name: /Explicitly retry uncertain scans/i });
+
+    fireEvent.click(retryButton);
+    await waitFor(() => expect(addToast).toHaveBeenCalledWith('0 synced, 1 failed; failed scans remain queued.', 'warning', 6000));
+
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+    expect(JSON.parse(localStorage.getItem('agri_uncertain_queue') || '[]')).toEqual([]);
+    expect(screen.queryByRole('button', { name: /Explicitly retry uncertain scans/i })).not.toBeInTheDocument();
+    expect(apiClient.post).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not automatically resubmit after a network failure, but permits an explicit retry', async () => {
+    const queuedScan = { id: 106, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockRejectedValue(new Error('Connection lost after send'));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Explicitly retry uncertain scans/i })).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+
+    fireEvent.click(screen.getByRole('button', { name: /Explicitly retry uncertain scans/i }));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(2));
   });
 
   it('contains valid ICAR dosage parameters across all disease definitions', () => {

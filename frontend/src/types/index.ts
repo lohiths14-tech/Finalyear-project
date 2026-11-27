@@ -121,7 +121,6 @@ export interface ScanHistoryItem {
   spread_risk?: string;
   treatment: string;
   timestamp: string;
-  full_results?: string;
 }
 
 export type FarmerView = 'home' | 'result' | 'history';

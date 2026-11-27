@@ -36,27 +36,27 @@ function InferenceProgress({
   streamProgress: FieldStreamProgress | null;
 }) {
   const [stageIdx, setStageIdx] = useState(0);
-  const [simulatedProgress, setSimulatedProgress] = useState(4);
+  const [estimatedProgress, setEstimatedProgress] = useState(4);
 
-  // If live SSE telemetry is streaming, use it; otherwise fallback to realistic timer
   const livePct = streamProgress?.percent ?? null;
   const liveMessage = streamProgress?.message ?? null;
-  const displayProgress = livePct !== null ? livePct : simulatedProgress;
+  const displayProgress = livePct !== null ? livePct : estimatedProgress;
 
   useEffect(() => {
     if (streamProgress) return;
     const timings = [3000, 12000, 18000, 14000, 12000, 10000, 8000];
     let idx = 0;
+    let timer: ReturnType<typeof setTimeout>;
     const advance = () => {
       if (idx >= INFERENCE_STAGES.length - 1) return;
-      idx++;
+      idx += 1;
       setStageIdx(idx);
-      setSimulatedProgress(INFERENCE_STAGES[idx].pct);
-      setTimeout(advance, timings[idx] || 10000);
+      setEstimatedProgress(INFERENCE_STAGES[idx].pct);
+      timer = setTimeout(advance, timings[idx] || 10000);
     };
-    const t = setTimeout(advance, timings[0]);
-    setSimulatedProgress(INFERENCE_STAGES[0].pct);
-    return () => clearTimeout(t);
+    setEstimatedProgress(INFERENCE_STAGES[0].pct);
+    timer = setTimeout(advance, timings[0]);
+    return () => clearTimeout(timer);
   }, [streamProgress]);
 
   const stage = INFERENCE_STAGES[stageIdx];
@@ -79,7 +79,7 @@ function InferenceProgress({
           {streamProgress ? 'AgriPulse Live Stream Active' : 'AgriPulse AI Analysis Running'}
         </div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          {streamProgress ? 'Receiving real-time SSE patch telemetry from server' : 'DINOv2 + Adaptive Grid on CPU — typically 2–3 minutes'}
+          {streamProgress ? 'Receiving progress events from the backend' : 'Analysis is running; progress below is a timer-based estimate, not backend telemetry.'}
         </div>
       </div>
       <div className="inference-progress-bar-track" style={{ width: '100%', maxWidth: 480 }}>
@@ -88,7 +88,9 @@ function InferenceProgress({
       <div className="inference-stage-label">
         <StageIcon size={14} color="var(--primary)" />
         <span>{liveMessage || stage.label}</span>
-        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)', fontSize: '0.78rem' }}>{displayProgress}%</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)', fontSize: '0.78rem' }}>
+          {livePct !== null ? `${displayProgress}% · backend` : `~${displayProgress}% · estimate`}
+        </span>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
         {INFERENCE_STAGES.map((_, i) => (
@@ -96,7 +98,7 @@ function InferenceProgress({
             key={i}
             style={{
               width: 8, height: 8, borderRadius: '50%',
-              background: i <= (livePct ? Math.floor((livePct / 100) * INFERENCE_STAGES.length) : stageIdx) ? 'var(--primary)' : 'var(--border)',
+              background: i <= (livePct !== null ? Math.floor((livePct / 100) * INFERENCE_STAGES.length) : stageIdx) ? 'var(--primary)' : 'var(--border)',
               transition: 'background 0.4s ease',
             }}
           />

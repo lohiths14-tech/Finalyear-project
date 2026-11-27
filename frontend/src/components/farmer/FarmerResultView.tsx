@@ -2,11 +2,11 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Volume2, VolumeX, Info, Download, MessageCircle } from 'lucide-react';
 import { FarmerDosageCalculator, type DosageCalcResult } from './FarmerDosageCalculator';
-import type { LeafResult } from '../../types';
+import type { FieldResult, LeafResult } from '../../types';
 import type { TranslationDictionary } from './i18n';
 
 interface FarmerResultViewProps {
-  result: LeafResult;
+  result: LeafResult | FieldResult;
   t: TranslationDictionary;
   onBack: () => void;
   isSpeaking: boolean;
@@ -46,6 +46,8 @@ export const FarmerResultView: React.FC<FarmerResultViewProps> = ({
     phi: 0,
   };
 
+  const isFieldResult = 'average_severity' in result;
+  const severity = isFieldResult ? result.average_severity : result.severity;
   const isHealthy = result.disease_type === 'Healthy';
   const certaintyText = result.confidence > 75 ? t.highCertainty : result.confidence > 45 ? t.medCertainty : t.lowCertainty;
   const isLowCertainty = result.confidence <= 45;
@@ -91,6 +93,12 @@ export const FarmerResultView: React.FC<FarmerResultViewProps> = ({
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginBottom: 18, lineHeight: 1.5 }}>
           {localizedDisease.whatIsIt}
         </p>
+
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 18, flexWrap: 'wrap', marginBottom: 18, color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+          <span>{isFieldResult ? 'Average field severity' : 'Leaf severity'}: <strong style={{ color: 'var(--text-primary)' }}>{severity.toFixed(1)}%</strong></span>
+          {isFieldResult && <span>Infected area: <strong style={{ color: 'var(--text-primary)' }}>{result.infection_rate.toFixed(1)}%</strong></span>}
+          {isFieldResult && <span>Spread risk: <strong style={{ color: 'var(--text-primary)' }}>{result.spread_risk}</strong></span>}
+        </div>
 
         {isLowCertainty && (
           <div style={{ background: 'var(--warning-glow)', border: '1px solid rgba(217, 119, 6, 0.35)', padding: 14, borderRadius: 12, marginBottom: 18, textAlign: 'left' }}>

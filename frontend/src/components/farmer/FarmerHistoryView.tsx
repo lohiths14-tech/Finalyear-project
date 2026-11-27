@@ -1,16 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
-import apiClient from '../../services/api';
-import type { LeafResult, ScanHistoryItem, FarmerView } from '../../types';
+import apiClient, { getScanDetail } from '../../services/api';
+import type { FieldResult, LeafResult, ScanHistoryItem, FarmerView } from '../../types';
 import type { TranslationDictionary } from './i18n';
 
 interface FarmerHistoryViewProps {
   setView: (view: FarmerView) => void;
-  setResult: (result: LeafResult | null) => void;
+  setResult: (result: LeafResult | FieldResult | null) => void;
   addToast: (message: string, type: 'success' | 'error' | 'warning' | 'info', duration?: number) => void;
   t: TranslationDictionary;
 }
+
+const isFieldResult = (value: unknown): value is FieldResult => {
+  if (!value || typeof value !== 'object') return false;
+  const result = value as Record<string, unknown>;
+  return typeof result.disease_type === 'string' &&
+    typeof result.average_severity === 'number' &&
+    typeof result.infection_rate === 'number' &&
+    typeof result.confidence === 'number' &&
+    typeof result.treatment === 'string' &&
+    Array.isArray(result.grid_data);
+};
+
+const isLeafResult = (value: unknown): value is LeafResult => {
+  if (!value || typeof value !== 'object') return false;
+  const result = value as Record<string, unknown>;
+  return typeof result.disease_type === 'string' &&
+    typeof result.severity === 'number' &&
+    typeof result.confidence === 'number' &&
+    typeof result.status === 'string' &&
+    typeof result.treatment === 'string';
+};
 
 export const FarmerHistoryView: React.FC<FarmerHistoryViewProps> = ({
   setView,
@@ -53,9 +74,22 @@ export const FarmerHistoryView: React.FC<FarmerHistoryViewProps> = ({
               key={item.id}
               className="card"
               style={{ padding: 16, textAlign: 'left', cursor: 'pointer', background: 'var(--bg-card)' }}
-              onClick={() => {
-                setResult(item as unknown as LeafResult);
-                setView('result');
+              onClick={async () => {
+                try {
+                  const detail = await getScanDetail(item.id);
+                  const scanResult = detail.full_results;
+                  if (item.scan_type === 'field' && isFieldResult(scanResult)) {
+                    setResult(scanResult);
+                    setView('result');
+                  } else if (item.scan_type === 'leaf' && isLeafResult(scanResult)) {
+                    setResult(scanResult);
+                    setView('result');
+                  } else {
+                    addToast('Detailed scan result is unavailable; the history summary is unchanged.', 'warning');
+                  }
+                } catch {
+                  addToast('Could not load the saved scan details. The history summary is still available.', 'warning');
+                }
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
