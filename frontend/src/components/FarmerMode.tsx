@@ -206,6 +206,7 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
               : undefined;
             const isDefiniteClientRejection = typeof status === 'number' && status >= 400 && status < 500;
             if (isDefiniteClientRejection) {
+              uncertainIds.delete(item.id);
               failed += 1;
             } else {
               uncertainIds.add(item.id);

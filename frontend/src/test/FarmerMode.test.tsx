@@ -173,6 +173,28 @@ describe('FarmerMode Component & Accessibility', () => {
     await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
   });
 
+  it('clears uncertain status when an explicit retry receives HTTP 4xx but keeps the scan queued', async () => {
+    const queuedScan = { id: 109, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post)
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockRejectedValueOnce({ response: { status: 422 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    const retryButton = await screen.findByRole('button', { name: /Explicitly retry uncertain scans/i });
+
+    fireEvent.click(retryButton);
+    await waitFor(() => expect(addToast).toHaveBeenCalledWith('0 synced, 1 failed; failed scans remain queued.', 'warning', 6000));
+
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+    expect(JSON.parse(localStorage.getItem('agri_uncertain_queue') || '[]')).toEqual([]);
+    expect(screen.queryByRole('button', { name: /Explicitly retry uncertain scans/i })).not.toBeInTheDocument();
+    expect(apiClient.post).toHaveBeenCalledTimes(2);
+  });
+
   it('does not automatically resubmit after a network failure, but permits an explicit retry', async () => {
     const queuedScan = { id: 106, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
     localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
