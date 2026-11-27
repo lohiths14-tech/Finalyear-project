@@ -203,6 +203,8 @@ app.include_router(leaf_router, prefix=PREFIX, tags=["Leaf Analysis"])
 app.include_router(history_router, prefix=PREFIX, tags=["History"])
 app.include_router(auth_router, prefix=PREFIX, tags=["Auth"])
 app.include_router(environment_router, prefix=PREFIX, tags=["Environment & External APIs"])
+# Root alias for frontend widgets (e.g. WeatherWidget) that call VITE_API_URL/environment directly
+app.include_router(environment_router, include_in_schema=False)
 app.include_router(jobs_router, prefix=PREFIX, tags=["Async Job Queue"])
 app.include_router(agronomy_router, prefix=PREFIX, tags=["Agronomy & Advisory"])
 app.include_router(model_registry_router, prefix=PREFIX, tags=["MLOps & Model Registry"])
