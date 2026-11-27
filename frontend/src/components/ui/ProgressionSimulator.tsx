@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
+import type React from 'react';
+import { useState } from 'react';
+import { Clock, Info, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface ProgressionSimulatorProps {
   initialSeverity: number;
@@ -14,124 +14,95 @@ export const ProgressionSimulator: React.FC<ProgressionSimulatorProps> = ({
   const [day, setDay] = useState(0);
   const isHealthy = diseaseType.toLowerCase().includes('healthy');
 
-  if (isHealthy) {
-    return null;
-  }
+  if (isHealthy) return null;
 
-  // Untreated: exponential foliar fungal spore spread (sigmoid growth)
-  const untreatedSeverity = Math.min(
+  const baselineSeverity = Math.max(0, Math.min(100, initialSeverity));
+  const risingScenario = Math.min(
     95,
-    Math.round(initialSeverity + (100 - initialSeverity) * (1 - Math.exp(-0.16 * day)))
+    Math.round(baselineSeverity + (100 - baselineSeverity) * (1 - Math.exp(-0.16 * day)))
   );
-
-  // Treated: arrested at day 2-3, containment & slight recovery
-  const treatedSeverity = Math.max(
+  const decliningScenario = Math.max(
     10,
-    Math.round(
-      day <= 2
-        ? initialSeverity + day * 1.5
-        : Math.max(12, initialSeverity * Math.exp(-0.08 * (day - 2)))
-    )
+    Math.round(day <= 2
+      ? baselineSeverity + day * 1.5
+      : Math.max(12, baselineSeverity * Math.exp(-0.08 * (day - 2))))
   );
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90 p-4 shadow-sm mt-4">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <Clock size={16} />
-          </div>
-          <div>
-            <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-              14-Day Theoretical "What-If" Heuristic Simulator
-            </h4>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400">
-              Not enough historical observations to estimate actual progression — illustrative epidemiological scenarios only
-            </p>
-          </div>
+    <section className="scenario-panel" aria-labelledby="progression-title">
+      <header className="scenario-panel__header">
+        <span className="scenario-panel__icon"><Clock size={17} /></span>
+        <div>
+          <h4 id="progression-title">Illustrative severity scenarios</h4>
+          <p>No historical observations are used. These are mathematical examples, not forecasts or treatment-efficacy estimates.</p>
         </div>
-        <span className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
-          Day {day} of 14
-        </span>
+        <span className="scenario-panel__day" aria-live="polite">Day {day} of 14</span>
+      </header>
+
+      <label className="scenario-panel__slider-label" htmlFor="progression-day">
+        Explore day {day} <span>Scenario day (0–14)</span>
+      </label>
+      <input
+        id="progression-day"
+        type="range"
+        min="0"
+        max="14"
+        value={day}
+        onChange={(event) => setDay(Number(event.target.value))}
+        aria-valuetext={`Day ${day} in an illustrative scenario`}
+        className="scenario-panel__slider"
+      />
+
+      <div className="scenario-panel__assumptions">
+        <div><strong>Rising assumption</strong><span>Moves toward 100%, capped at 95%, by adding 16% of the remaining range per day.</span></div>
+        <div><strong>Declining assumption</strong><span>Rises 1.5 points per day for two days, then decays by 8% per day, with a 10% floor.</span></div>
       </div>
 
-      {/* Slider Controls */}
-      <div className="mb-4">
-        <div className="flex justify-between text-[11px] font-medium text-slate-500 mb-1">
-          <span>Day 0 (Initial Scan)</span>
-          <span>Day 5</span>
-          <span>Day 10</span>
-          <span>Day 14 (Full Cycle)</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="14"
-          value={day}
-          onChange={(e) => setDay(parseInt(e.target.value, 10))}
-          className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+      <div className="scenario-panel__scenarios" aria-live="polite">
+        <ScenarioCard
+          direction="rising"
+          label="Rising scenario"
+          value={risingScenario}
+          description="Illustrative increase based on the assumption above."
+        />
+        <ScenarioCard
+          direction="declining"
+          label="Declining scenario"
+          value={decliningScenario}
+          description="Illustrative decrease based on the assumption above."
         />
       </div>
 
-      {/* Trajectory Comparison Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {/* Untreated Path */}
-        <div className="p-3 rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-950/20">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-rose-800 dark:text-rose-300 flex items-center gap-1.5">
-              <AlertTriangle size={14} className="text-rose-600" />
-              Untreated Trajectory
-            </span>
-            <span className="text-xs font-extrabold text-rose-600 dark:text-rose-400">
-              {untreatedSeverity}% Severity
-            </span>
-          </div>
-          <div className="w-full bg-rose-200/60 dark:bg-rose-900/50 rounded-full h-2 overflow-hidden mb-2">
-            <motion.div
-              className="bg-rose-600 h-full rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${untreatedSeverity}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          <p className="text-[10px] text-rose-700 dark:text-rose-400">
-            {day === 0
-              ? 'Current state without intervention.'
-              : day < 7
-              ? 'Pathogen expands radially across adjacent canopy patches.'
-              : 'Severe leaf senescence, panicle lodging risk, and irreversible harvest drop.'}
-          </p>
-        </div>
-
-        {/* Treated Path */}
-        <div className="p-3 rounded-xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/40 dark:bg-emerald-950/20">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-              <ShieldCheck size={14} className="text-emerald-600" />
-              Prompt ICAR Treatment
-            </span>
-            <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-              {treatedSeverity}% Severity
-            </span>
-          </div>
-          <div className="w-full bg-emerald-200/60 dark:bg-emerald-900/50 rounded-full h-2 overflow-hidden mb-2">
-            <motion.div
-              className="bg-emerald-600 h-full rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${treatedSeverity}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-          <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
-            {day === 0
-              ? 'Fungicide applied within 48h window.'
-              : day < 7
-              ? 'Spore sporulation halted; necrotic perimeter quarantined.'
-              : 'New tillers emerge as foliar lesion expansion is contained.'}
-          </p>
-        </div>
-      </div>
-    </div>
+      <p className="scenario-panel__note"><Info size={14} />The curves are not derived from this farm&apos;s history, weather, or a validated disease model.</p>
+    </section>
   );
 };
+
+function ScenarioCard({
+  direction,
+  label,
+  value,
+  description,
+}: {
+  direction: 'rising' | 'declining';
+  label: string;
+  value: number;
+  description: string;
+}) {
+  const Icon = direction === 'rising' ? TrendingUp : TrendingDown;
+
+  return (
+    <article className={`scenario-card scenario-card--${direction}`}>
+      <div className="scenario-card__topline">
+        <h5><Icon size={15} aria-hidden="true" />{label}</h5>
+        <strong>{value}% severity</strong>
+      </div>
+      <div className="scenario-card__track" aria-hidden="true">
+        <div style={{ width: `${value}%` }} />
+      </div>
+      <p>{description}</p>
+    </article>
+  );
+}
+
 export default ProgressionSimulator;

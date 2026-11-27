@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig } from 'framer-motion';
 import { Camera, X, RefreshCw, Zap, AlertCircle, Upload } from 'lucide-react';
 
 interface LiveCameraScannerProps {
@@ -10,6 +10,7 @@ interface LiveCameraScannerProps {
 
 export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, onClose, onCapture }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const nativeCameraInputRef = useRef<HTMLInputElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -77,6 +78,7 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
 
   useEffect(() => {
     if (isOpen) {
+      dialogRef.current?.focus();
       startCamera();
     } else {
       stopActiveStream();
@@ -132,10 +134,17 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
   };
 
   return (
+    <MotionConfig reducedMotion="user">
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md">
           <motion.div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="leaf-camera-title"
+            tabIndex={-1}
+            onKeyDown={(event) => { if (event.key === 'Escape') onClose(); }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -145,7 +154,7 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
             <div className="flex items-center justify-between p-3.5 bg-slate-900/90 border-b border-slate-800 text-white z-10">
               <div className="flex items-center gap-2">
                 <Camera size={18} className="text-emerald-400" />
-                <span className="text-xs font-bold uppercase tracking-wider">Holographic Field Scanner</span>
+                <h2 id="leaf-camera-title" className="text-xs font-bold uppercase tracking-wider">Leaf camera capture</h2>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -153,12 +162,14 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
                   onClick={toggleFacing}
                   className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
                   title="Switch Camera"
+                  aria-label={facingMode === 'environment' ? 'Switch to front camera' : 'Switch to rear camera'}
                 >
                   <RefreshCw size={15} />
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
+                  aria-label="Close leaf camera"
                   className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
                 >
                   <X size={15} />
@@ -179,7 +190,7 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
             {/* Viewfinder Viewport */}
             <div className="relative w-full aspect-[4/3] bg-black flex items-center justify-center overflow-hidden">
               {error ? (
-                <div className="p-5 sm:p-6 text-center text-rose-300 text-xs flex flex-col items-center gap-3 max-w-sm">
+                <div role="alert" className="p-5 sm:p-6 text-center text-rose-300 text-xs flex flex-col items-center gap-3 max-w-sm">
                   <AlertCircle size={26} className="text-rose-400 shrink-0" />
                   <span className="leading-relaxed">{error}</span>
                   <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
@@ -207,6 +218,7 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
                     autoPlay
                     playsInline
                     muted
+                    aria-label="Live leaf camera preview"
                     className="w-full h-full object-cover"
                   />
 
@@ -256,6 +268,7 @@ export const LiveCameraScanner: React.FC<LiveCameraScannerProps> = ({ isOpen, on
         </div>
       )}
     </AnimatePresence>
+    </MotionConfig>
   );
 };
 export default LiveCameraScanner;

@@ -11,10 +11,16 @@ describe('SpectralTab', () => {
     expect(screen.getByText(/REFERENCE MODE/i)).toBeInTheDocument();
   });
 
+  it('states the reference curve point count, spacing, and illustrative feature count', () => {
+    render(<SpectralTab lastScan={null} />);
+    expect(screen.getByText(/32 generated points, from intensity 0 to 248 in steps of 8/i)).toBeInTheDocument();
+    expect(screen.getByText(/six displayed entries are illustrative references/i)).toBeInTheDocument();
+  });
+
   it('renders NGVC Spectral Curve card title', () => {
     render(<SpectralTab lastScan={null} />);
     expect(screen.getByText(/Image-derived NGVC profile/i)).toBeInTheDocument();
-    expect(screen.getByText(/Image-derived profile/i)).toBeInTheDocument();
+    expect(screen.getByText('Illustrative reference', { selector: 'span' })).toBeInTheDocument();
   });
 
   it('renders model-derived proxy features card', () => {

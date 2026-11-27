@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import { BarChart3, Radio, Sparkles, Info } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
@@ -14,13 +14,13 @@ interface SpectralTabProps {
 interface NgvcData { intensity: number; value: number; }
 
 // Illustrative reference values only; these are not measured crop or model data.
-const HEALTHY_BASELINE_NGVC = Array.from({ length: 32 }, (_, i) => ({
+const ILLUSTRATIVE_NGVC_REFERENCE = Array.from({ length: 32 }, (_, i) => ({
   intensity: i * 8,
   value: Math.max(0, 0.08 - 0.002 * i + 0.001 * Math.sin(i * 0.8)),
   baseline: Math.max(0, 0.09 - 0.0022 * i + 0.0012 * Math.sin(i * 0.7)),
 }));
 
-const HEALTHY_FEATURE_REFERENCE = [
+const ILLUSTRATIVE_FEATURE_REFERENCE = [
   { subject: 'Chlorophyll (proxy)', modelA: 0, modelB: 88 },
   { subject: 'Texture (illustrative)', modelA: 0, modelB: 72 },
   { subject: 'Edge (illustrative)', modelA: 0, modelB: 65 },
@@ -35,15 +35,15 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
   const hasModelData = hasNgvc || hasFeatures;
 
   const mergedNgvc = useMemo(() => {
-    if (!hasNgvc) return HEALTHY_BASELINE_NGVC;
+    if (!hasNgvc) return ILLUSTRATIVE_NGVC_REFERENCE;
     return (lastScan!.ngvc_data as NgvcData[]).slice(0, 64).map((d, i) => ({
       ...d,
-      baseline: HEALTHY_BASELINE_NGVC[Math.floor(i / 2)]?.baseline ?? 0,
+      baseline: ILLUSTRATIVE_NGVC_REFERENCE[Math.floor(i / 2)]?.baseline ?? 0,
     }));
   }, [lastScan, hasNgvc]);
 
   const mergedFeatures = useMemo(() => {
-    if (!hasFeatures) return HEALTHY_FEATURE_REFERENCE;
+    if (!hasFeatures) return ILLUSTRATIVE_FEATURE_REFERENCE;
     return lastScan!.spectral_radar.map((d: { subject: string; A: number; B: number }) => ({
       subject: d.subject,
       modelA: d.A,
@@ -52,6 +52,7 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
   }, [lastScan, hasFeatures]);
 
   return (
+    <MotionConfig reducedMotion="user">
     <motion.div
       key="spectral"
       initial={{ opacity: 0, y: 8 }}
@@ -85,21 +86,23 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
             <h3 className="spectral-chart-title">
               <Radio size={17} color="var(--primary)" /> Image-derived NGVC profile
             </h3>
-            <span className="spectral-badge spectral-badge--primary">Image-derived profile</span>
+            <span className="spectral-badge spectral-badge--primary">{hasNgvc ? 'Scan data' : 'Illustrative reference'}</span>
           </div>
           <p className="spectral-chart-desc">
-            Normalized Gray Value Curve derived from the uploaded image; it is not a multispectral sensor reading or a direct chlorophyll measurement.
+            {hasNgvc
+              ? `The ${lastScan?.ngvc_data?.length ?? 0} NGVC points are derived from this scan image, not from a multispectral sensor or direct chlorophyll measurement.`
+              : 'No scan data is available. This illustrative reference contains 32 generated points, from intensity 0 to 248 in steps of 8; the intensity axis has no verified physical unit.'}
           </p>
 
           <div className="spectral-legend">
             <div className="spectral-legend-item">
               <div className="spectral-legend-dot" style={{ background: 'var(--primary)' }} />
-              {hasNgvc ? 'Uploaded image (NGVC)' : 'Illustrative example'}
+              {hasNgvc ? 'Uploaded image (NGVC)' : 'Illustrative NGVC reference'}
             </div>
-            <div className="spectral-legend-item">
+            {hasNgvc && <div className="spectral-legend-item">
               <div className="spectral-legend-dot" style={{ background: '#94a3b8' }} />
-              Illustrative reference
-            </div>
+              Illustrative reference curve
+            </div>}
           </div>
 
           <div className="spectral-chart-wrapper">
@@ -125,12 +128,12 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
             <h3 className="spectral-chart-title">
               <BarChart3 size={17} color="var(--accent)" /> Model-derived proxy features
             </h3>
-            <span className="spectral-badge spectral-badge--accent">A/B proxy scores (0–100)</span>
+            <span className="spectral-badge spectral-badge--accent">A/B proxy values</span>
           </div>
           <p className="spectral-chart-desc">
             {hasFeatures
-              ? 'Values come from the field response’s learned-feature A/B proxy scores; they are not physical crop measurements.'
-              : 'Illustrative reference values only; upload a field scan to view model-generated proxy scores.'}
+              ? `${lastScan?.spectral_radar?.length ?? 0} feature rows are returned with A/B proxy values; these are not physical crop measurements and have no physical units.`
+              : 'No model feature values are available. The six displayed entries are illustrative references, not model output.'}
           </p>
 
           <div className="spectral-legend">
@@ -183,7 +186,7 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
             {[
               { label: 'Disease Type', value: lastScan.disease_type, color: 'var(--text-primary)' },
               { label: 'Severity', value: `${lastScan.average_severity?.toFixed(1) ?? '--'}%`, color: lastScan.average_severity > 50 ? 'var(--danger)' : lastScan.average_severity > 20 ? 'var(--warning)' : 'var(--success)' },
-              { label: 'Infected Area', value: `${lastScan.percentage_infected_area?.toFixed(1) ?? '--'}%`, color: 'var(--text-primary)' },
+              { label: 'Infected Area', value: lastScan.percentage_infected_area !== undefined ? `${lastScan.percentage_infected_area.toFixed(1)}%` : 'Unavailable', color: 'var(--text-primary)' },
               { label: 'Confidence', value: `${lastScan.confidence?.toFixed(1) ?? '--'}%`, color: 'var(--primary)' },
             ].map(({ label, value, color }) => (
               <div key={label} className="spectral-metric-box">
@@ -195,5 +198,6 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
         </motion.div>
       )}
     </motion.div>
+    </MotionConfig>
   );
 }

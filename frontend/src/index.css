@@ -758,10 +758,21 @@
   height: 100%;
   border-radius: 50px;
   background: linear-gradient(90deg, var(--primary), #34d399, var(--primary-light));
-  background-size: 200% 100%;
-  animation: progressShimmer 1.5s linear infinite;
   transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.inference-progress-bar-indeterminate {
+  width: 34%;
+  height: 100%;
+  border-radius: 50px;
+  background: linear-gradient(90deg, transparent, var(--primary), #34d399, transparent);
+  animation: progressIndeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes progressIndeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(300%); }
 }
 
 @keyframes progressShimmer {
@@ -1742,6 +1753,60 @@ a:focus-visible {
 /* ══════════════════════════════════════════════════════
    OVERVIEW TAB — PROFESSIONAL UTILITY CLASSES
 ══════════════════════════════════════════════════════ */
+
+/* Overview command-center hierarchy */
+.overview-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 2px 0 22px;
+  padding: 4px 2px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.overview-hero__eyebrow {
+  margin: 0 0 6px;
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.overview-hero__title {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1.12;
+}
+.overview-hero__copy {
+  max-width: 620px;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+.overview-hero__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+.overview-hero__state > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.overview-hero__state.is-active > span { background: var(--success); }
 
 /* System status banner (shown before first scan) */
 .overview-status-banner {
@@ -2738,9 +2803,26 @@ a:focus-visible {
 
 .spatial-hit-cell {
   position: absolute;
+  appearance: none;
+  padding: 0;
+  background: transparent;
   cursor: pointer;
   border: 1px solid transparent;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.spatial-grid-cell {
+  appearance: none;
+  padding: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.spatial-hit-cell:focus-visible,
+.spatial-grid-cell:focus-visible {
+  z-index: 20 !important;
+  outline: 2px solid #ffffff;
+  outline-offset: -2px;
 }
 
 .spatial-hit-cell.hovered {
@@ -2779,6 +2861,32 @@ a:focus-visible {
 }
 
 /* GIS Studio Wrapper */
+.gis-provenance-note {
+  padding: 11px 14px;
+  border: 1px solid var(--border-focus);
+  border-radius: var(--radius-md);
+  background: var(--primary-glow);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.gis-map-empty-note {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 500;
+  max-width: min(90%, 360px);
+  transform: translate(-50%, -50%);
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
 .gis-studio-wrapper {
   display: flex;
   flex-direction: column;
@@ -3209,4 +3317,251 @@ a:focus-visible {
   color: var(--primary);
   border-color: rgba(16, 185, 129, 0.45);
   font-weight: 700;
+}
+
+.scenario-notice,
+.scenario-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.scenario-notice__heading,
+.scenario-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scenario-notice__icon,
+.scenario-panel__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--primary-glow);
+  color: var(--primary);
+}
+
+.scenario-notice h4,
+.scenario-panel h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.scenario-notice p,
+.scenario-panel p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.scenario-notice__tag,
+.scenario-panel__day {
+  display: inline-flex;
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.scenario-notice__context,
+.scenario-panel__assumptions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.scenario-notice__context span,
+.scenario-panel__assumptions > div {
+  padding: 9px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.scenario-panel__header {
+  align-items: flex-start;
+}
+
+.scenario-panel__header > div { flex: 1; min-width: 0; }
+.scenario-panel__day { margin: 0; flex-shrink: 0; }
+
+.scenario-panel__slider-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-primary);
+  font-size: 0.77rem;
+  font-weight: 700;
+}
+
+.scenario-panel__slider-label span {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.scenario-panel__slider { width: 100%; accent-color: var(--primary); }
+
+.scenario-panel__assumptions > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scenario-panel__assumptions strong {
+  color: var(--text-primary);
+  font-size: 0.72rem;
+}
+
+.scenario-panel__assumptions span {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.scenario-panel__scenarios {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scenario-card {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+
+.scenario-card__topline,
+.scenario-card__topline h5 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-card__topline h5 {
+  justify-content: flex-start;
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 0.74rem;
+}
+
+.scenario-card__topline strong {
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.scenario-card__track {
+  height: 6px;
+  margin: 10px 0 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.scenario-card__track > div { height: 100%; border-radius: inherit; background: var(--primary); }
+.scenario-card--rising .scenario-card__track > div { background: var(--warning); }
+.scenario-card__note { display: flex; align-items: flex-start; gap: 6px; }
+.scenario-card__note svg { flex: 0 0 auto; margin-top: 2px; }
+
+.scientific-drawer-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.scientific-drawer-header__label,
+.scientific-drawer-header__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaf-diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.leaf-diagnostic-grid > div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.leaf-diagnostic-grid span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.leaf-diagnostic-grid strong,
+.leaf-diagnostic-grid p,
+.leaf-diagnostic-grid li {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: 0.76rem;
+}
+
+.leaf-diagnostic-grid p { margin: 5px 0 0; color: var(--text-secondary); }
+.leaf-diagnostic-grid ul { margin: 5px 0 0; padding-left: 18px; }
+
+@media (max-width: 640px) {
+  .overview-hero { align-items: flex-start; flex-direction: column; }
+  .overview-hero__state { align-self: flex-start; }
+  .spectral-reference-banner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+  .spectral-reference-banner > div:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+  .spectral-reference-badge { grid-column: 2; justify-self: start; margin-left: 0; }
+  .spectral-chart-header { align-items: flex-start; flex-wrap: wrap; }
+  .spectral-chart-title { min-width: 0; }
+  .scenario-notice__context,
+  .scenario-panel__assumptions,
+  .scenario-panel__scenarios { grid-template-columns: 1fr; }
+  .scenario-panel__header { flex-wrap: wrap; }
+  .scenario-panel__day { margin-left: 44px; }
+  .gis-telemetry-pill { max-width: calc(100% - 18px); font-size: 0.62rem; gap: 5px; }
+  .gis-floating-toolbar { left: 8px; right: 8px; justify-content: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inference-progress-bar-indeterminate { animation: none; transform: translateX(0); width: 60%; }
+  .progress-bar-fill,
+  .inference-progress-bar-fill,
+  .scenario-card__track > div { transition: none; }
 }

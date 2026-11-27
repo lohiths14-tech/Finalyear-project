@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import NumberFlow from '@number-flow/react';
 import {
-  ShieldCheck, AlertTriangle, Activity, Award, CheckCircle2, ZoomIn, X, Sparkles, Bot, Cpu
+  ShieldCheck, AlertTriangle, Activity, Award, ZoomIn, X, Sparkles
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -116,19 +116,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
       { name: 'Severe', value: parseFloat(((severe / total) * 100).toFixed(1)), color: 'var(--danger)' }
     ].filter(d => d.value > 0);
 
-    const disease = results.disease_type;
-    const effectiveDisease = ((disease === 'Unknown' || disease?.includes('Unknown')) && results.alternatives?.[0])
-      ? results.alternatives[0].disease
-      : disease;
-    const severity = results.average_severity;
-    const spread = results.infection_rate;
-    if (effectiveDisease && effectiveDisease !== 'Unknown' && !effectiveDisease.includes('Healthy') && !effectiveDisease.includes('Unknown')) {
-      smartRecommendation = `${spread > 30 ? 'High' : 'Moderate'} spread of ${effectiveDisease.split(' (')[0]} detected. Immediate ${severity > 50 ? 'aggressive ' : ''}treatment recommended within ${severity > 60 ? '48 hours' : '1 week'}. ${results.treatment}`;
-    } else if (effectiveDisease?.includes('Healthy')) {
-      smartRecommendation = "Field is healthy. Maintain current practices.";
-    } else {
-      smartRecommendation = results.treatment;
-    }
+    smartRecommendation = results.treatment || 'No scan-specific guidance was returned.';
 
     coverageStr = `${results.infection_rate.toFixed(1)}%`;
     if (results.previous_infection_rate !== undefined && results.previous_infection_rate !== null) {
@@ -146,7 +134,18 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <motion.div key="overview" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <header className="overview-hero">
+        <div>
+          <p className="overview-hero__eyebrow">AGRI PULSE / FIELD INTELLIGENCE</p>
+          <h2 className="overview-hero__title">Field command center</h2>
+          <p className="overview-hero__copy">A session-level view of scan output, local environment context, and model evaluation.</p>
+        </div>
+        <span className={`overview-hero__state${results ? ' is-active' : ''}`}>
+          <span aria-hidden="true" />{results ? 'Scan loaded' : 'Awaiting scan'}
+        </span>
+      </header>
 
       {/* System Status Banner — only shown when no scan */}
       {!results && (
@@ -157,10 +156,10 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               <strong className="overview-status-banner__title">No live field scan yet</strong>
               <div className="overview-status-banner__sub">
                 {metricsStatus === 'loading'
-                  ? 'Loading model benchmark data…'
+                  ? 'Loading evaluation metrics separately from field measurements…'
                   : metricsStatus === 'available'
-                  ? 'Model validation benchmarks are shown separately from live field measurements below.'
-                  : 'Model benchmark data unavailable. Run a field scan to see measured field data.'}
+                  ? 'No session scan is attached. Evaluation metrics are shown separately below.'
+                  : 'Evaluation metrics are unavailable. Run a field analysis to view scan output.'}
               </div>
             </div>
           </div>
@@ -182,7 +181,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                 <NumberFlow value={parseFloat((100 - results.average_severity).toFixed(1))} />
                 <span>/100</span>
               </>
-            ) : 'Data unavailable'}
+            ) : 'No scan yet'}
           </h3>
           {results && (
             <div className="progress-bar" aria-label="Field health score">
@@ -200,11 +199,6 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               <span className={trendDirection === 'increasing' && results.average_severity > 20 ? 'text-danger' : 'text-success'}>
                 {trendDirection === 'increasing' ? '+' : trendDirection === 'decreasing' ? '-' : ''}{trendChange}%
               </span>
-            </div>
-          )}
-          {metrics && (
-            <div className="overview-val-accuracy">
-              Model validation benchmark: <NumberFlow value={parseFloat(metrics.accuracy.toFixed(1))} />%
             </div>
           )}
         </div>
@@ -255,14 +249,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             )}
           </div>
           <p className="overview-taxon-name">
-            {results ? (
-              results.disease_type?.includes('Rice Blast') || results.alternatives?.[0]?.disease?.includes('Rice Blast') ? 'Magnaporthe oryzae' :
-              results.disease_type?.includes('Bacterial Blight') || results.alternatives?.[0]?.disease?.includes('Bacterial Blight') ? 'Xanthomonas oryzae pv. oryzae' :
-              results.disease_type?.includes('Brown Spot') || results.alternatives?.[0]?.disease?.includes('Brown Spot') ? 'Bipolaris oryzae' :
-              results.disease_type?.includes('Leaf Scald') || results.alternatives?.[0]?.disease?.includes('Leaf Scald') ? 'Microdochium oryzae' :
-              results.disease_type?.includes('Healthy') ? 'Oryza sativa (Healthy Canopy)' :
-              'Taxonomic Classification'
-            ) : 'No active field scan'}
+              {results ? 'Taxonomic identification is not included in this scan result.' : 'No active field scan'}
           </p>
           <p className="card-sub">{results ? `Coverage: ${coverageStr}` : 'Waiting for input — no live field scan data.'}</p>
           {results && distributionData.length > 0 && (
@@ -298,7 +285,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <AlertTriangle size={18} color="var(--warning)" />
           </div>
           <p className="card-sub treatment-text overview-recommendation-text">
-            {results ? smartRecommendation : 'No field scan is available. Upload a field image to view measured data and agronomic guidance.'}
+            {results ? smartRecommendation : 'No field scan is available in this session. Run a field analysis to view scan-specific output.'}
           </p>
           {results && (
             <span className={`risk-badge risk-${results.spread_risk?.toLowerCase()}`}>
@@ -312,7 +299,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
       <div className="overview-section">
         <div className="overview-section-header">
           <h3 className="overview-section-title">Field Environment Intelligence</h3>
-          <span className="overview-section-badge">Live · Open-Meteo · Nominatim · GBIF</span>
+          <span className="overview-section-badge">Environment context</span>
         </div>
         <WeatherWidget />
       </div>
@@ -324,7 +311,7 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <div>
               <h3 className="overview-chart-title">Spatio-Temporal Progression</h3>
               <p className="overview-chart-sub">
-                Observed measurements and model estimates are labeled separately.
+                Only backend-marked observed history is shown; single-scan estimates are excluded.
               </p>
             </div>
             <div className="chart-legend">
@@ -361,15 +348,16 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
 
         <div className="card glass">
-          <h3 className="overview-chart-title">Model Activation Features</h3>
+          <h3 className="overview-chart-title">Model-derived proxy features</h3>
           {results ? (
             <div style={{ height: 320 }}>
               <ResponsiveContainer width="100%" height={320} minWidth={0}>
                 <RadarChart cx="50%" cy="50%" outerRadius="80%" data={results.spectral_radar}>
                   <PolarGrid stroke="var(--border)" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
-                  <Radar name="Field" dataKey="A" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.5} />
-                  <Radar name="Reference" dataKey="B" stroke="var(--accent)" fill="var(--accent)" fillOpacity={0.2} />
+                  <RechartsTooltip />
+                  <Radar name="Proxy A" dataKey="A" stroke="var(--primary)" fill="var(--primary)" fillOpacity={0.5} />
+                  <Radar name="Proxy B" dataKey="B" stroke="var(--accent)" fill="var(--accent)" fillOpacity={0.2} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -379,37 +367,21 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
         </div>
       </div>
 
-      {/* Hybrid AI Architecture Card */}
-      <div className="card glass overview-ai-stack">
+      <section className="card glass overview-ai-stack" aria-labelledby="overview-provider-title">
         <div className="overview-ai-stack__header">
           <div className="overview-ai-stack__title-row">
-            <Sparkles size={18} color="var(--primary)" />
-            <h3 className="overview-ai-stack__title">Hybrid AI Architecture: DINOv2 Foundation + ICAR Decision Engine</h3>
-          </div>
-          <div className="overview-ai-status-pill">
-            <span className="overview-ai-status-dot" />
-            {aiStatus?.display_name || 'AI provider status unavailable'}
-          </div>
-        </div>
-
-        <div className="overview-ai-grid">
-          {[
-            { icon: Cpu, iconColor: 'var(--primary)', label: 'Vision Backbone', title: 'DINOv2 ViT-S/14', desc: '384-dim dense patch representation' },
-            { icon: Activity, iconColor: 'var(--accent)', label: 'Spatial Topology', title: 'Graph Transformer', desc: '64-Patch adaptive grid spatial clusters' },
-            { icon: Bot, iconColor: 'var(--primary)', label: 'Decision Engine', title: 'ICAR Grounded Advisory', desc: 'Evidence-based spatial containment & dosing' },
-            { icon: ShieldCheck, iconColor: 'var(--success)', label: 'Knowledge Base', title: 'ICAR-IRRI 2026 PoP', desc: 'FRAC codes, PHI & tank dilution math' },
-          ].map(({ icon: Icon, iconColor, label, title, desc }) => (
-            <div key={label} className="overview-ai-grid-item">
-              <div className="overview-ai-grid-item__label">
-                <Icon size={14} color={iconColor} />
-                <span>{label}</span>
-              </div>
-              <div className="overview-ai-grid-item__title">{title}</div>
-              <div className="overview-ai-grid-item__desc">{desc}</div>
+            <Activity size={18} color="var(--primary)" />
+            <div>
+              <h3 id="overview-provider-title" className="overview-ai-stack__title">Inference service</h3>
+              <p className="overview-validation-desc">Provider information is operational status, not a measure of field health.</p>
             </div>
-          ))}
+          </div>
+          <div className="overview-ai-status-pill" role="status">
+            <span className="overview-ai-status-dot" />
+            {aiStatus?.display_name || 'Provider status unavailable'}
+          </div>
         </div>
-      </div>
+      </section>
 
       {metricsStatus === 'loading' && (
         <div className="card glass overview-skeleton-card" role="status" aria-label="Loading model benchmark data" aria-busy="true">
@@ -430,14 +402,14 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
       )}
 
       {/* Model Validation & Confusion Matrix */}
-      {metrics?.has_cm && (
+      {metrics && (
         <div className="card glass overview-validation-card">
           <div className="overview-validation-card__header">
             <div className="overview-validation-card__title-row">
               <Award size={18} color="var(--primary)" />
-              <h3 className="overview-ai-stack__title">Model Validation & Performance</h3>
-            </div>
-            <span className="overview-validation-card__badge">Evaluated on unseen test holdouts</span>
+            <h3 className="overview-ai-stack__title">Model evaluation metrics</h3>
+          </div>
+          <span className="overview-validation-card__badge">Values provided by benchmark file</span>
           </div>
 
           <div className="overview-validation-grid">
@@ -460,17 +432,14 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                 ))}
               </div>
 
-              <div className="overview-calibration-note">
-                <CheckCircle2 size={13} color="var(--success)" />
-                <span>Calibrated confidence via Temperature Scaling</span>
-              </div>
             </div>
 
-            <div className="overview-cm-wrapper">
-              <div
+            {metrics.has_cm && <div className="overview-cm-wrapper">
+              <button
+                type="button"
                 className="overview-cm-thumbnail"
                 onClick={() => setIsZoomed(true)}
-                title="Click to zoom in"
+                aria-label="Enlarge model confusion matrix"
               >
                 <img
                   src={`${(import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '')}/model_weights/confusion_matrix.png`}
@@ -481,8 +450,8 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                 <div className="overview-cm-zoom-hint">
                   <ZoomIn size={11} /> Click to enlarge
                 </div>
-              </div>
-            </div>
+              </button>
+            </div>}
           </div>
         </div>
       )}
@@ -490,10 +459,10 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
       {/* Fullscreen Zoom Modal */}
       {isZoomed && (
         <div className="overview-modal-backdrop" onClick={() => setIsZoomed(false)}>
-          <div className="overview-modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="overview-modal-box" role="dialog" aria-modal="true" aria-labelledby="overview-modal-title" onClick={(e) => e.stopPropagation()}>
             <div className="overview-modal-header">
-              <h4 className="overview-modal-title">Confusion Matrix (Full Resolution)</h4>
-              <button className="btn-icon" onClick={() => setIsZoomed(false)}>
+              <h4 id="overview-modal-title" className="overview-modal-title">Confusion Matrix (Full Resolution)</h4>
+              <button type="button" className="btn-icon" aria-label="Close confusion matrix" onClick={() => setIsZoomed(false)}>
                 <X size={16} />
               </button>
             </div>
@@ -503,11 +472,12 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
               className="overview-modal-img"
             />
             <p className="overview-modal-caption">
-              Normalized classification distribution across 5 target classes.
+              Model evaluation confusion matrix supplied by the benchmark service.
             </p>
           </div>
         </div>
       )}
     </motion.div>
+    </MotionConfig>
   );
 }
