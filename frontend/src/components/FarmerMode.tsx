@@ -15,6 +15,54 @@ interface FarmerModeProps {
 
 export { I18N };
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const isLeafResult = (value: unknown): value is LeafResult => {
+  if (!value || typeof value !== 'object') return false;
+  const data = value as Record<string, unknown>;
+  return typeof data.disease_type === 'string'
+    && isFiniteNumber(data.severity)
+    && isFiniteNumber(data.confidence)
+    && typeof data.status === 'string'
+    && typeof data.treatment === 'string';
+};
+
+const isFieldResult = (value: unknown): value is FieldResult => {
+  if (!value || typeof value !== 'object') return false;
+  const data = value as Record<string, unknown>;
+  if (typeof data.disease_type !== 'string'
+    || !isFiniteNumber(data.average_severity)
+    || !isFiniteNumber(data.infection_rate)
+    || typeof data.spread_risk !== 'string'
+    || typeof data.treatment !== 'string'
+    || !isFiniteNumber(data.veg_coverage)
+    || !isFiniteNumber(data.confidence)
+    || !Array.isArray(data.grid_data)
+    || !Array.isArray(data.progression_data)
+    || !Array.isArray(data.spectral_radar)) return false;
+
+  const gridIsValid = data.grid_data.every((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const cell = entry as Record<string, unknown>;
+    return ['x_percent', 'y_percent', 'w_percent', 'h_percent', 'severity'].every((key) => isFiniteNumber(cell[key]))
+      && typeof cell.disease === 'string';
+  });
+  const progressionIsValid = data.progression_data.every((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const point = entry as Record<string, unknown>;
+    return typeof point.day === 'string'
+      && (point.actual === null || isFiniteNumber(point.actual))
+      && isFiniteNumber(point.predicted);
+  });
+  const radarIsValid = data.spectral_radar.every((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const item = entry as Record<string, unknown>;
+    return typeof item.subject === 'string' && isFiniteNumber(item.A) && isFiniteNumber(item.B);
+  });
+  return gridIsValid && progressionIsValid && radarIsValid;
+};
+
 export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps) {
   const [view, setView] = useState<FarmerView>('home');
   const [scanning, setScanning] = useState(false);
@@ -28,6 +76,15 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
     return (saved as Language) || 'kn'; // Default to Kannada
   });
   const queueSyncLock = useRef(false);
+  const [uncertainScanIds, setUncertainScanIds] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem('agri_uncertain_queue');
+      const parsed: unknown = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed.filter((id): id is number => Number.isInteger(id)) : [];
+    } catch {
+      return [];
+    }
+  });
   const [offlineQueue, setOfflineQueue] = useState<OfflineQueueItem[]>(() => {
     try {
       const saved = localStorage.getItem('agri_offline_queue');
@@ -112,11 +169,19 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
     reader.readAsDataURL(file);
   }, [offlineQueue, addToast]);
 
-  const syncQueue = useCallback(async () => {
+  const syncQueue = useCallback(async (retryUncertain = false) => {
     if (!backendOnline || offlineQueue.length === 0 || queueSyncLock.current) return;
     queueSyncLock.current = true;
-    const itemsToSync = [...offlineQueue];
+    const uncertainIds = new Set(uncertainScanIds);
+    const itemsToSync = offlineQueue.filter((item) => retryUncertain ? uncertainIds.has(item.id) : !uncertainIds.has(item.id));
+    if (itemsToSync.length === 0) {
+      addToast('Some scans have unknown delivery status. Review before choosing to retry them.', 'warning', 8000);
+      queueSyncLock.current = false;
+      return;
+    }
     let acknowledged = 0;
+    let failed = 0;
+    let uncertain = 0;
     addToast(`Syncing ${itemsToSync.length} offline scans...`, 'info');
 
     try {
@@ -128,38 +193,61 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
           });
           const formData = new FormData();
           formData.append('file', new File([imageBlob], item.name, { type: imageBlob.type || 'image/jpeg' }));
-          const response = await apiClient.post<LeafResult | FieldResult>(
-            item.type === 'leaf' ? '/analyze/leaf' : '/analyze/field',
-            formData,
-            { headers: { 'Content-Type': 'multipart/form-data' }, timeout: item.type === 'field' ? 300000 : 120000 }
-          );
-          const data = response.data;
+          let response;
+          try {
+            response = await apiClient.post<LeafResult | FieldResult>(
+              item.type === 'leaf' ? '/analyze/leaf' : '/analyze/field',
+              formData,
+              { headers: { 'Content-Type': 'multipart/form-data' }, timeout: item.type === 'field' ? 300000 : 120000 }
+            );
+          } catch (error) {
+            const hasServerResponse = Boolean(error && typeof error === 'object' && 'response' in error && (error as { response?: unknown }).response);
+            if (!hasServerResponse) {
+              uncertainIds.add(item.id);
+              uncertain += 1;
+            } else {
+              failed += 1;
+            }
+            localStorage.setItem('agri_uncertain_queue', JSON.stringify([...uncertainIds]));
+            setUncertainScanIds([...uncertainIds]);
+            continue;
+          }
           const validAcknowledgement = item.type === 'leaf'
-            ? typeof (data as LeafResult).disease_type === 'string' && typeof (data as LeafResult).severity === 'number' && typeof (data as LeafResult).confidence === 'number'
-            : typeof (data as FieldResult).disease_type === 'string' && typeof (data as FieldResult).average_severity === 'number' && typeof (data as FieldResult).infection_rate === 'number';
-          if (!validAcknowledgement) throw new Error('The server response did not contain a valid scan result');
+            ? isLeafResult(response.data)
+            : isFieldResult(response.data);
+          if (!validAcknowledgement) {
+            uncertainIds.add(item.id);
+            uncertain += 1;
+            localStorage.setItem('agri_uncertain_queue', JSON.stringify([...uncertainIds]));
+            setUncertainScanIds([...uncertainIds]);
+            continue;
+          }
 
           const saved = localStorage.getItem('agri_offline_queue');
           const currentQueue: OfflineQueueItem[] = saved ? JSON.parse(saved) : [];
           const remainingQueue = currentQueue.filter((queued) => queued.id !== item.id);
           localStorage.setItem('agri_offline_queue', JSON.stringify(remainingQueue));
           setOfflineQueue(remainingQueue);
+          uncertainIds.delete(item.id);
+          localStorage.setItem('agri_uncertain_queue', JSON.stringify([...uncertainIds]));
+          setUncertainScanIds([...uncertainIds]);
           acknowledged += 1;
         } catch {
-          // Keep this item queued when delivery or the server acknowledgement is uncertain.
+          failed += 1;
         }
       }
 
-      const remaining = itemsToSync.length - acknowledged;
-      if (remaining === 0) {
-        addToast(`Successfully synced ${acknowledged} offline scans.`, 'success');
+      if (uncertain > 0) {
+        addToast(`${acknowledged} synced, ${failed} failed, ${uncertain} have unknown delivery status. The server may already have processed them; they remain queued and will not be sent again unless you explicitly retry.`, 'warning', 10000);
+      } else if (failed > 0) {
+        addToast(`${acknowledged} synced, ${failed} failed; failed scans remain queued.`, 'warning', 6000);
       } else {
-        addToast(`${acknowledged} of ${itemsToSync.length} scans synced; ${remaining} remain queued.`, 'warning', 6000);
+        addToast(`Successfully synced ${acknowledged} offline scans.`, 'success');
       }
     } finally {
       queueSyncLock.current = false;
     }
-  }, [backendOnline, offlineQueue, addToast]);
+  }, [backendOnline, offlineQueue, uncertainScanIds, addToast]);
 
   const resizeImage = useCallback((file: File): Promise<File> => {
     return new Promise((resolve) => {
@@ -329,7 +417,9 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
                 lang={lang}
                 onLanguageChange={handleLanguageChange}
                 offlineQueue={offlineQueue}
-                onSyncQueue={syncQueue}
+                onSyncQueue={() => syncQueue()}
+                onRetryUncertain={() => syncQueue(true)}
+                uncertainScanCount={offlineQueue.filter((item) => uncertainScanIds.includes(item.id)).length}
                 onScan={handleScan}
                 onSelectSample={(file) => processFile(file, 'leaf')}
                 onNavigateHistory={() => setView('history')}

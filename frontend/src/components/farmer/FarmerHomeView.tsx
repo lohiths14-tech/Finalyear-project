@@ -11,6 +11,8 @@ interface FarmerHomeViewProps {
   onLanguageChange: (lang: Language) => void;
   offlineQueue: OfflineQueueItem[];
   onSyncQueue: () => void;
+  onRetryUncertain: () => void;
+  uncertainScanCount: number;
   onScan: (e: React.ChangeEvent<HTMLInputElement>, type: 'leaf' | 'field') => void;
   onSelectSample?: (file: File) => void;
   onNavigateHistory: () => void;
@@ -22,6 +24,8 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
   onLanguageChange,
   offlineQueue,
   onSyncQueue,
+  onRetryUncertain,
+  uncertainScanCount,
   onScan,
   onNavigateHistory,
 }) => {
@@ -41,12 +45,24 @@ export const FarmerHomeView: React.FC<FarmerHomeViewProps> = ({
 
       <div style={{ display: 'grid', gap: 16 }}>
         {offlineQueue.length > 0 && (
-          <div className="action-card" onClick={onSyncQueue} style={{ background: 'var(--accent-glow)', borderColor: 'var(--accent)', cursor: 'pointer' }}>
-            <Upload size={32} color="var(--accent)" />
-            <div>
-              <div className="farmer-label" style={{ color: 'var(--accent)' }}>{t.syncScans} ({offlineQueue.length})</div>
-              <div className="farmer-sublabel">{t.syncScansSub}</div>
-            </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <button type="button" className="action-card" onClick={() => onSyncQueue()} style={{ width: '100%', textAlign: 'left', background: 'var(--accent-glow)', borderColor: 'var(--accent)', cursor: 'pointer' }}>
+              <Upload size={32} color="var(--accent)" />
+              <div>
+                <div className="farmer-label" style={{ color: 'var(--accent)' }}>{t.syncScans} ({offlineQueue.length})</div>
+                <div className="farmer-sublabel">{t.syncScansSub}</div>
+              </div>
+            </button>
+            {uncertainScanCount > 0 && (
+              <div role="status" style={{ border: '1px solid var(--warning)', borderRadius: 10, padding: 12, color: 'var(--text-primary)', background: 'var(--warning-glow)' }}>
+                <p style={{ margin: '0 0 8px', lineHeight: 1.5 }}>
+                  {uncertainScanCount} scan(s) have unknown delivery status. The server may already have processed them. They will not be sent again unless you explicitly retry.
+                </p>
+                <button type="button" onClick={onRetryUncertain}>
+                  Explicitly retry uncertain scans
+                </button>
+              </div>
+            )}
           </div>
         )}
 
