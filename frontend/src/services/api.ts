@@ -42,7 +42,8 @@ apiClient.interceptors.response.use(
 
     // Only retry on genuine network failures (no response), not on timeouts or HTTP errors.
     const isNetworkError = !error.response && error.code !== 'ECONNABORTED';
-    if (isNetworkError && config && !config.__isRetryRequest && (config.retryCount ?? 0) < 2) {
+    const isSafeRead = config?.method?.toUpperCase() === 'GET';
+    if (isNetworkError && isSafeRead && config && !config.__isRetryRequest && (config.retryCount ?? 0) < 2) {
       config.__isRetryRequest = true;
       config.retryCount = (config.retryCount ?? 0) + 1;
 
@@ -69,28 +70,11 @@ export const analyzeLeaf = async (formData: FormData): Promise<LeafResult> => {
 
 export const analyzeField = async (formData: FormData): Promise<FieldResult> => {
   // Field inference on CPU can take 2-3 minutes — use a generous 5-minute timeout.
-  try {
-    const response = await apiClient.post<FieldResult>('/analyze/field', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 300000, // 5 minutes
-    });
-    return response.data;
-  } catch (error: any) {
-    // If proxy fails with connection reset, try direct connection to backend
-    if (error.code === 'ECONNRESET' || error.message?.includes('ECONNRESET')) {
-      console.warn('Proxy connection reset, trying direct backend connection...');
-      const directClient = axios.create({
-        baseURL: API_BASE_URL,
-        timeout: 300000,
-      });
-      
-      const response = await directClient.post<FieldResult>('/analyze/field', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      return response.data;
-    }
-    throw error;
-  }
+  const response = await apiClient.post<FieldResult>('/analyze/field', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 300000, // 5 minutes
+  });
+  return response.data;
 };
 
 export interface FieldStreamProgress {
@@ -103,80 +87,68 @@ export const analyzeFieldStream = async (
   formData: FormData,
   onProgress?: (progress: FieldStreamProgress) => void
 ): Promise<FieldResult> => {
-  const url = `${API_BASE_URL}/analyze/field/stream`;
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-    });
+  const response = await fetch(`${API_BASE_URL}/analyze/field/stream`, {
+    method: 'POST',
+    body: formData,
+  });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorMsg = `Server error (${response.status})`;
-      try {
-        const json = JSON.parse(errorText);
-        errorMsg = json.detail || json.message || errorMsg;
-      } catch {}
-      throw new Error(errorMsg);
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMsg = `Server error (${response.status})`;
+    try {
+      const json = JSON.parse(errorText);
+      errorMsg = json.detail || json.message || errorMsg;
+    } catch {
+      // Preserve the status-based message when the server response is not JSON.
     }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
-    let buffer = '';
-    let finalResult: FieldResult | null = null;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      let currentEvent = 'message';
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        if (trimmed.startsWith('event:')) {
-          currentEvent = trimmed.slice(6).trim();
-        } else if (trimmed.startsWith('data:')) {
-          const dataStr = trimmed.slice(5).trim();
-          try {
-            const parsed = JSON.parse(dataStr);
-            if (currentEvent === 'progress') {
-              if (onProgress) {
-                onProgress(parsed);
-              }
-            } else if (currentEvent === 'complete') {
-              finalResult = parsed as FieldResult;
-            } else if (currentEvent === 'error') {
-              throw new Error(parsed.error || 'Inference error');
-            }
-          } catch (e: any) {
-            if (currentEvent === 'error') throw e;
-          }
-        }
-      }
-    }
-
-    if (finalResult) {
-      return finalResult;
-    }
-
-    // Fallback if stream ended without explicit complete event:
-    return await analyzeField(formData);
-  } catch (err) {
-    console.warn('[SSE Stream] Stream fallback to standard POST /analyze/field:', err);
-    return await analyzeField(formData);
+    throw new Error(errorMsg);
   }
+  if (!response.body) throw new Error('Response body is null');
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let finalResult: FieldResult | null = null;
+
+  const consumeEvent = (eventBlock: string) => {
+    let eventName = 'message';
+    const dataLines: string[] = [];
+    for (const line of eventBlock.replace(/\r/g, '').split('\n')) {
+      if (line.startsWith('event:')) eventName = line.slice(6).trim();
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trim());
+    }
+    if (dataLines.length === 0) return;
+    const payload = JSON.parse(dataLines.join('\n'));
+    if (eventName === 'progress') onProgress?.(payload as FieldStreamProgress);
+    else if (eventName === 'complete') finalResult = payload as FieldResult;
+    else if (eventName === 'error') throw new Error(payload.error || 'Inference error');
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || '';
+    blocks.forEach(consumeEvent);
+  }
+  buffer += decoder.decode();
+  if (buffer.trim()) consumeEvent(buffer);
+  if (!finalResult) throw new Error('The analysis stream ended without a completion acknowledgement.');
+  return finalResult;
 };
+
+export interface ScanHistoryDetail extends ScanHistoryItem {
+  full_results: Record<string, unknown>;
+}
 
 export const getHistory = async (): Promise<ScanHistoryItem[]> => {
   const response = await apiClient.get<ScanHistoryItem[]>('/history');
+  return response.data;
+};
+
+export const getScanDetail = async (scanId: string): Promise<ScanHistoryDetail> => {
+  const response = await apiClient.get<ScanHistoryDetail>(`/history/${encodeURIComponent(scanId)}`);
   return response.data;
 };
 

@@ -13,7 +13,7 @@ interface SpectralTabProps {
 
 interface NgvcData { intensity: number; value: number; }
 
-// Static healthy rice/wheat crop baseline reference (from IRRI published NGVC norms)
+// Illustrative reference values only; these are not measured crop or model data.
 const HEALTHY_BASELINE_NGVC = Array.from({ length: 32 }, (_, i) => ({
   intensity: i * 8,
   value: Math.max(0, 0.08 - 0.002 * i + 0.001 * Math.sin(i * 0.8)),
@@ -21,32 +21,33 @@ const HEALTHY_BASELINE_NGVC = Array.from({ length: 32 }, (_, i) => ({
 }));
 
 const HEALTHY_FEATURE_REFERENCE = [
-  { subject: 'Chlorophyll', healthy: 88, diseased: 0 },
-  { subject: 'Texture',     healthy: 72, diseased: 0 },
-  { subject: 'Edge',        healthy: 65, diseased: 0 },
-  { subject: 'Color',       healthy: 91, diseased: 0 },
-  { subject: 'Pattern',     healthy: 78, diseased: 0 },
-  { subject: 'Canopy',      healthy: 85, diseased: 0 },
+  { subject: 'Chlorophyll (proxy)', modelA: 0, modelB: 88 },
+  { subject: 'Texture (illustrative)', modelA: 0, modelB: 72 },
+  { subject: 'Edge (illustrative)', modelA: 0, modelB: 65 },
+  { subject: 'Color (illustrative)', modelA: 0, modelB: 91 },
+  { subject: 'Pattern (illustrative)', modelA: 0, modelB: 78 },
+  { subject: 'Canopy (illustrative)', modelA: 0, modelB: 85 },
 ];
 
 export default function SpectralTab({ lastScan }: SpectralTabProps) {
-  const hasScan = !!(lastScan?.ngvc_data && lastScan.ngvc_data.length > 0);
+  const hasNgvc = !!(lastScan?.ngvc_data && lastScan.ngvc_data.length > 0);
   const hasFeatures = !!(lastScan?.spectral_radar && lastScan.spectral_radar.length > 0);
+  const hasModelData = hasNgvc || hasFeatures;
 
   const mergedNgvc = useMemo(() => {
-    if (!hasScan) return HEALTHY_BASELINE_NGVC;
+    if (!hasNgvc) return HEALTHY_BASELINE_NGVC;
     return (lastScan!.ngvc_data as NgvcData[]).slice(0, 64).map((d, i) => ({
       ...d,
       baseline: HEALTHY_BASELINE_NGVC[Math.floor(i / 2)]?.baseline ?? 0,
     }));
-  }, [lastScan, hasScan]);
+  }, [lastScan, hasNgvc]);
 
   const mergedFeatures = useMemo(() => {
     if (!hasFeatures) return HEALTHY_FEATURE_REFERENCE;
     return lastScan!.spectral_radar.map((d: { subject: string; A: number; B: number }) => ({
       subject: d.subject,
-      healthy: d.B ?? 80,
-      diseased: d.A,
+      modelA: d.A,
+      modelB: d.B,
     }));
   }, [lastScan, hasFeatures]);
 
@@ -62,17 +63,17 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
         <Info size={16} color="var(--primary)" className="spectral-banner-icon" />
         <div>
           <div className="spectral-banner-title">
-            {hasScan
-              ? `Spectral feature breakdown for: ${lastScan?.disease_type}`
-              : 'Showing healthy crop reference baseline (IRRI norms)'}
+            {hasModelData
+              ? `Image-derived model features for: ${lastScan?.disease_type}`
+              : 'Illustrative reference example (not model output)'}
           </div>
           <div className="spectral-banner-sub">
-            {hasScan
-              ? "Green = field scan · Gray = healthy reference. Note: Feature magnitudes represent learned neural embedding proxies, not direct physical multispectral hardware measurements."
-              : "Upload a field or leaf scan to overlay your crop's spectral signature against the healthy baseline."}
+            {hasModelData
+              ? 'NGVC values are derived from the uploaded image; neural feature values are model-derived proxies, not direct physical spectral measurements. Gray curves and unscanned chart values are illustrative references only.'
+              : 'The displayed curves and feature values are illustrative examples only; they are not measurements, field observations, IRRI norms, or model outputs.'}
           </div>
         </div>
-        {!hasScan && (
+        {!hasModelData && (
           <span className="spectral-reference-badge">REFERENCE MODE</span>
         )}
       </div>
@@ -82,22 +83,22 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
         <div className="card spectral-chart-card">
           <div className="spectral-chart-header">
             <h3 className="spectral-chart-title">
-              <Radio size={17} color="var(--primary)" /> NGVC Spectral Curve
+              <Radio size={17} color="var(--primary)" /> Image-derived NGVC profile
             </h3>
-            <span className="spectral-badge spectral-badge--primary">128-Bin Histogram</span>
+            <span className="spectral-badge spectral-badge--primary">Image-derived profile</span>
           </div>
           <p className="spectral-chart-desc">
-            Normalized Gray Value Curve — captures chlorophyll absorption bands and chlorosis patterns.
+            Normalized Gray Value Curve derived from the uploaded image; it is not a multispectral sensor reading or a direct chlorophyll measurement.
           </p>
 
           <div className="spectral-legend">
             <div className="spectral-legend-item">
               <div className="spectral-legend-dot" style={{ background: 'var(--primary)' }} />
-              {hasScan ? 'Field Scan' : 'Healthy Crop (IRRI ref.)'}
+              {hasNgvc ? 'Uploaded image (NGVC)' : 'Illustrative example'}
             </div>
             <div className="spectral-legend-item">
               <div className="spectral-legend-dot" style={{ background: '#94a3b8' }} />
-              Healthy Baseline
+              Illustrative reference
             </div>
           </div>
 
@@ -108,7 +109,7 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
                 <XAxis dataKey="intensity" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                 <Tooltip
-                  formatter={(v, name) => [(v as number).toFixed(5), name === 'value' ? (hasScan ? 'Field Scan' : 'Healthy Reference') : 'Baseline']}
+                  formatter={(v, name) => [(v as number).toFixed(5), name === 'value' ? (hasNgvc ? 'Uploaded image (NGVC)' : 'Illustrative example') : 'Illustrative reference']}
                   contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.8rem', boxShadow: 'var(--shadow-card)' }}
                 />
                 <Area type="monotone" dataKey="baseline" stroke="#94a3b8" strokeWidth={1.5} fill="rgba(148,163,184,0.08)" strokeDasharray="4 2" name="baseline" />
@@ -122,25 +123,25 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
         <div className="card spectral-chart-card">
           <div className="spectral-chart-header">
             <h3 className="spectral-chart-title">
-              <BarChart3 size={17} color="var(--accent)" /> Neural Activation Features
+              <BarChart3 size={17} color="var(--accent)" /> Model-derived proxy features
             </h3>
-            <span className="spectral-badge spectral-badge--accent">Multi-Head Embeddings</span>
+            <span className="spectral-badge spectral-badge--accent">A/B proxy scores (0–100)</span>
           </div>
           <p className="spectral-chart-desc">
-            {hasScan
-              ? 'Field-extracted pathological activations vs. healthy crop baseline.'
-              : 'Healthy crop reference signatures (IRRI). Upload a scan to compare your field.'}
+            {hasFeatures
+              ? 'Values come from the field response’s learned-feature A/B proxy scores; they are not physical crop measurements.'
+              : 'Illustrative reference values only; upload a field scan to view model-generated proxy scores.'}
           </p>
 
           <div className="spectral-legend">
             <div className="spectral-legend-item">
               <div className="spectral-legend-dot" style={{ background: 'var(--primary)' }} />
-              Healthy Baseline
+              {hasFeatures ? 'Model B proxy' : 'Illustrative reference'}
             </div>
             {hasFeatures && (
               <div className="spectral-legend-item">
                 <div className="spectral-legend-dot" style={{ background: 'var(--danger)' }} />
-                Field Scan
+                Model A proxy
               </div>
             )}
           </div>
@@ -152,12 +153,12 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
                 <XAxis dataKey="subject" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
                 <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} domain={[0, 100]} />
                 <Tooltip
-                  formatter={(v, name) => [`${(v as number).toFixed(1)}`, name === 'healthy' ? 'Healthy Baseline' : 'Field Scan']}
+                  formatter={(v, name) => [`${(v as number).toFixed(1)}`, name === 'modelB' ? (hasFeatures ? 'Model B proxy' : 'Illustrative reference') : 'Model A proxy']}
                   contentStyle={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.8rem', boxShadow: 'var(--shadow-card)' }}
                 />
-                <Bar dataKey="healthy" fill="var(--primary)" radius={[4,4,0,0]} name="healthy" opacity={0.85} />
+                <Bar dataKey="modelB" fill="var(--primary)" radius={[4,4,0,0]} name="modelB" opacity={0.85} />
                 {hasFeatures && (
-                  <Bar dataKey="diseased" fill="var(--danger)" radius={[4,4,0,0]} name="diseased" opacity={0.8} />
+                  <Bar dataKey="modelA" fill="var(--danger)" radius={[4,4,0,0]} name="modelA" opacity={0.8} />
                 )}
               </BarChart>
             </ResponsiveContainer>
@@ -166,7 +167,7 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
       </div>
 
       {/* Spectral Interpretation panel */}
-      {hasScan && lastScan && (
+      {hasModelData && lastScan && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -175,8 +176,8 @@ export default function SpectralTab({ lastScan }: SpectralTabProps) {
         >
           <div className="spectral-interpretation-header">
             <Sparkles size={16} color="var(--primary)" />
-            <h4 className="spectral-interpretation-title">Spectral Interpretation</h4>
-            <span className="spectral-interpretation-source">Derived from DINOv2 features</span>
+            <h4 className="spectral-interpretation-title">Field scan summary</h4>
+            <span className="spectral-interpretation-source">Backend response · proxy features where noted</span>
           </div>
           <div className="spectral-interpretation-grid">
             {[

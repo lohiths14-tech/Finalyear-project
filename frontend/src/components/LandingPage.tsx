@@ -52,7 +52,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
             <a href="#capabilities" className="hover:text-emerald-400 transition-colors">Capabilities</a>
             <a href="#architecture" className="hover:text-emerald-400 transition-colors">Architecture</a>
             <a href="#workflow" className="hover:text-emerald-400 transition-colors">Workflow</a>
-            <a href="#benchmarks" className="hover:text-emerald-400 transition-colors">Benchmarks</a>
+            <a href="#benchmarks" className="hover:text-emerald-400 transition-colors">Workflows</a>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
               </span>
             </div>
             <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20">
-              Verified Pipeline
+              Pipeline Overview
             </span>
           </div>
 
@@ -172,7 +172,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
               <div className="text-[10px] font-mono text-cyan-400 font-bold">STAGE 03</div>
               <div className="text-sm font-bold text-white">Calibrated Heads</div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Temperature-scaled classification (ECE &lt; 0.04) + energy-based OOD rejection head.
+                Classification confidence and out-of-distribution checks are presented when returned by the analysis service.
               </p>
             </div>
 
@@ -191,16 +191,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
       <section id="benchmarks" className="py-10 border-y border-white/10 bg-slate-900/40">
         <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="text-center p-3">
-            <div className="text-3xl font-extrabold text-white font-mono">10,407</div>
-            <div className="text-xs text-slate-400 mt-1">Paddy Doctor Verified Images</div>
+            <div className="text-3xl font-extrabold text-white font-mono">Leaf + Field</div>
+            <div className="text-xs text-slate-400 mt-1">Supported analysis workflows</div>
           </div>
           <div className="text-center p-3">
-            <div className="text-3xl font-extrabold text-emerald-400 font-mono">88.8%</div>
-            <div className="text-xs text-slate-400 mt-1">Paddy Doctor Val Acc (0.867 F1)</div>
+            <div className="text-3xl font-extrabold text-emerald-400 font-mono">Leaf</div>
+            <div className="text-xs text-slate-400 mt-1">Single-image analysis workflow</div>
           </div>
           <div className="text-center p-3">
-            <div className="text-3xl font-extrabold text-teal-300 font-mono">&lt; 7 ms</div>
-            <div className="text-xs text-slate-400 mt-1">ONNX INT8 Student Latency</div>
+            <div className="text-3xl font-extrabold text-teal-300 font-mono">Field</div>
+            <div className="text-xs text-slate-400 mt-1">Adaptive grid analysis workflow</div>
           </div>
           <div className="text-center p-3">
             <div className="text-3xl font-extrabold text-cyan-300 font-mono">5</div>
@@ -247,7 +247,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
               Targeted high-resolution leaf analysis with temperature calibration (Platt scaling) and Energy-based Out-Of-Distribution (OOD) rejection to prevent non-crop misclassifications.
             </p>
             <div className="pt-2 text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
-              <ShieldCheck size={14} /> ECE Score &lt; 0.04
+              <ShieldCheck size={14} /> Confidence and OOD indicators
             </div>
           </div>
 
@@ -286,10 +286,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterExpert, onEnter
             </div>
             <h3 className="text-lg font-bold text-white">Edge Deployment Ready</h3>
             <p className="text-slate-400 text-xs leading-relaxed">
-              ONNX Runtime INT8 dynamic quantization compresses models down to 2.36 MB, easily fitting strict cloud edge and offline Raspberry Pi deployability.
+              The repository includes ONNX model exports; actual deployment size and device performance depend on the selected model and runtime.
             </p>
             <div className="pt-2 text-[11px] font-mono text-emerald-400">
-              Zero GPU Required · Pure CPU
+              Runtime requirements vary by deployment
             </div>
           </div>
         </div>
