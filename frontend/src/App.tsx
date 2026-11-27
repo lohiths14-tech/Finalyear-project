@@ -125,12 +125,17 @@ let toastIdCounter = 0;
 
 const isValidTab = (tab: string | null): tab is string => Boolean(tab && Object.prototype.hasOwnProperty.call(TAB_TITLES, tab));
 
+export function getInitialRoute(search: string = window.location.search) {
+  const tab = new URLSearchParams(search).get('tab');
+  return isValidTab(tab)
+    ? { viewMode: 'app' as const, activeTab: tab }
+    : { viewMode: 'landing' as const, activeTab: 'field' };
+}
+
 function App() {
-  const [viewMode, setViewMode] = useState<'landing' | 'app'>('app');
-  const [activeTab, setActiveTab] = useState(() => {
-    const tab = new URLSearchParams(window.location.search).get('tab');
-    return isValidTab(tab) ? tab : 'field';
-  });
+  const [initialRoute] = useState(() => getInitialRoute());
+  const [viewMode, setViewMode] = useState<'landing' | 'app'>(initialRoute.viewMode);
+  const [activeTab, setActiveTab] = useState(initialRoute.activeTab);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [lastScan, setLastScan] = useState<FieldResult | null>(null);
@@ -168,18 +173,8 @@ function App() {
 
   // Auto-login when backend has no API key requirement
   useEffect(() => {
-    if (!apiKey) {
-      apiClient.get('/health').then(() => {
-        login('__no_auth__');
-      }).catch(() => {
-        // Cold start or network glitch: auto-login to demo
-        login('__no_auth__');
-      }).finally(() => {
-        setAuthChecked(true);
-      });
-    } else {
-      setAuthChecked(true);
-    }
+    if (!apiKey) login('__no_auth__');
+    setAuthChecked(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addToast = useCallback((message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success', duration = 5000) => {
@@ -211,6 +206,8 @@ function App() {
   };
 
   useEffect(() => {
+    if (viewMode !== 'app') return;
+
     let wasOnline: boolean | null = null;
     const checkHealth = async () => {
       try {
@@ -229,7 +226,7 @@ function App() {
     checkHealth();
     const interval = setInterval(checkHealth, 60000);
     return () => clearInterval(interval);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [viewMode, addToast]);
 
   const handleScanComplete = (results: FieldResult) => {
     setLastScan(results);
