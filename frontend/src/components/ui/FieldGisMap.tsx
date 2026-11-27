@@ -12,7 +12,6 @@ interface FieldGisMapProps {
   imageUrl: string | null;
   heatmapDataUrl?: string | null;
   gridData?: GridCell[];
-  diseaseType?: string;
   averageSeverity?: number;
   lat?: number;
   lon?: number;
@@ -94,6 +93,17 @@ function isValidLatLon(lat: number, lon: number): boolean {
   return !isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
 }
 
+function escapeHtml(value: string): string {
+  const entities: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return value.replace(/[&<>"']/g, (character) => entities[character]);
+}
+
 const SIZE_PRESETS = [
   { label: '1 Acre (~64m)', w: 64, h: 64 },
   { label: '1 Ha (100m)', w: 100, h: 100 },
@@ -106,15 +116,17 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
   imageUrl,
   heatmapDataUrl,
   gridData = [],
-  diseaseType = 'Rice Blast',
-  lat: initialLat = 13.9299,
-  lon: initialLon = 75.5681,
+  lat,
+  lon,
   onSelectCell,
 }) => {
-  const safeInitLat = typeof initialLat === 'number' && !isNaN(initialLat) ? initialLat : 13.9299;
-  const safeInitLon = typeof initialLon === 'number' && !isNaN(initialLon) ? initialLon : 75.5681;
+  const hasInitialCoordinates = typeof lat === 'number' && typeof lon === 'number' && isValidLatLon(lat, lon);
+  const safeInitLat = hasInitialCoordinates ? lat : 0;
+  const safeInitLon = hasInitialCoordinates ? lon : 0;
 
-  // Geolocation & Field Geometry State
+  // Coordinates and plot geometry are only shown after an explicit location choice.
+  const [locationSelected, setLocationSelected] = useState(hasInitialCoordinates);
+  const [locationSource, setLocationSource] = useState<string | null>(hasInitialCoordinates ? 'Provided coordinates' : null);
   const [centerLat, setCenterLat] = useState<number>(safeInitLat);
   const [centerLon, setCenterLon] = useState<number>(safeInitLon);
   const [widthMeters, setWidthMeters] = useState<number>(150);
@@ -123,7 +135,7 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
   const [nudgeStepMeters, setNudgeStepMeters] = useState<number>(15);
 
   // Coordinate Input & Feedback
-  const [coordInput, setCoordInput] = useState<string>(`${safeInitLat.toFixed(6)}, ${safeInitLon.toFixed(6)}`);
+  const [coordInput, setCoordInput] = useState<string>(hasInitialCoordinates ? `${safeInitLat.toFixed(6)}, ${safeInitLon.toFixed(6)}` : '');
   const [coordError, setCoordError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [locatingGps, setLocatingGps] = useState(false);
@@ -146,8 +158,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
 
   // Keep text box synced when coordinates move via drag/nudge/GPS
   useEffect(() => {
-    setCoordInput(`${centerLat.toFixed(6)}, ${centerLon.toFixed(6)}`);
-  }, [centerLat, centerLon]);
+    if (locationSelected) setCoordInput(`${centerLat.toFixed(6)}, ${centerLon.toFixed(6)}`);
+  }, [centerLat, centerLon, locationSelected]);
 
   const { dLat, dLon } = useMemo(
     () => metersToLatLonDelta(centerLat, widthMeters, heightMeters),
@@ -187,8 +199,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-      center: [safeInitLat, safeInitLon],
-      zoom: 17,
+      center: hasInitialCoordinates ? [safeInitLat, safeInitLon] : [20, 0],
+      zoom: hasInitialCoordinates ? 17 : 2,
       maxZoom: 20,
       zoomControl: true,
       attributionControl: false,
@@ -212,18 +224,22 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
       if (tapToPlaceRef.current) {
         setCenterLat(e.latlng.lat);
         setCenterLon(e.latlng.lng);
+        setLocationSelected(true);
+        setLocationSource('Map-selected position');
         setCoordError(null);
       }
     });
 
-    const initDelta = metersToLatLonDelta(safeInitLat, 150, 150);
-    map.fitBounds(
-      [
-        [safeInitLat - initDelta.dLat, safeInitLon - initDelta.dLon],
-        [safeInitLat + initDelta.dLat, safeInitLon + initDelta.dLon],
-      ],
-      { padding: [44, 44] }
-    );
+    if (hasInitialCoordinates) {
+      const initDelta = metersToLatLonDelta(safeInitLat, 150, 150);
+      map.fitBounds(
+        [
+          [safeInitLat - initDelta.dLat, safeInitLon - initDelta.dLon],
+          [safeInitLat + initDelta.dLat, safeInitLon + initDelta.dLon],
+        ],
+        { padding: [44, 44] }
+      );
+    }
 
     return () => {
       map.remove();
@@ -253,15 +269,15 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     tileLayerRef.current = newLayer;
   }, [activeLayer]);
 
-  // 3. Render Field Perimeter, Photo Underlay, Thermal Heatmap, Draggable Pin & Hotspots
+  // Render the user-positioned illustrative extent and its aligned overlays.
   useEffect(() => {
     const overlayGroup = overlayLayerRef.current;
     if (!overlayGroup) return;
 
     overlayGroup.clearLayers();
 
-    // A. Drone / Field Photo Underlay (optional so user can align against field bunds)
-    if (showPhoto && imageUrl) {
+    // A. User-positioned image underlay; no georeferenced boundary is supplied.
+    if (locationSelected && showPhoto && imageUrl) {
       const photoOverlay = L.imageOverlay(imageUrl, bounds, {
         opacity: showHeatmap ? Math.max(0.25, overlayOpacity * 0.65) : overlayOpacity,
         interactive: false,
@@ -269,8 +285,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
       overlayGroup.addLayer(photoOverlay);
     }
 
-    // B. AI Thermal Heatmap Overlay
-    if (showHeatmap && heatmapDataUrl) {
+    // B. Heatmap aligned to the illustrative extent, not a measured footprint.
+    if (locationSelected && showHeatmap && heatmapDataUrl) {
       const heatmapOverlay = L.imageOverlay(heatmapDataUrl, bounds, {
         opacity: overlayOpacity,
         interactive: false,
@@ -278,44 +294,49 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
       overlayGroup.addLayer(heatmapOverlay);
     }
 
-    // C. Field Boundary Rectangle
-    const fieldPerimeter = L.rectangle(bounds, {
+    // C. User-positioned extent (illustrative; no measured boundary is provided by this screen).
+    if (locationSelected) {
+      const fieldPerimeter = L.rectangle(bounds, {
       color: '#f59e0b',
       weight: 2.5,
       dashArray: '6, 6',
       fillColor: '#10b981',
       fillOpacity: showPhoto || showHeatmap ? 0.03 : 0.1,
       interactive: false,
-    });
-    overlayGroup.addLayer(fieldPerimeter);
+      });
+      overlayGroup.addLayer(fieldPerimeter);
+    }
 
     // D. Draggable Center Pin (lets user drag the entire field plot directly on the satellite map)
-    const pinIcon = L.divIcon({
-      className: 'gis-center-pin-wrapper',
-      html: `<div class="gis-center-pin" title="Drag to reposition field plot"><span></span></div>`,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-    });
-    const centerMarker = L.marker([centerLat, centerLon], {
-      icon: pinIcon,
-      draggable: true,
-      zIndexOffset: 500,
-    });
-    centerMarker.bindTooltip('Drag pin to move field plot', {
-      direction: 'top',
-      offset: [0, -14],
-      opacity: 0.9,
-    });
-    centerMarker.on('dragend', () => {
-      const pos = centerMarker.getLatLng();
-      setCenterLat(pos.lat);
-      setCenterLon(pos.lng);
-      setCoordError(null);
-    });
-    overlayGroup.addLayer(centerMarker);
+    if (locationSelected) {
+      const pinIcon = L.divIcon({
+        className: 'gis-center-pin-wrapper',
+        html: `<div class="gis-center-pin" title="Drag to reposition the illustrative plot"><span></span></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      });
+      const centerMarker = L.marker([centerLat, centerLon], {
+        icon: pinIcon,
+        draggable: true,
+        zIndexOffset: 500,
+      });
+      centerMarker.bindTooltip('Drag to reposition the illustrative plot', {
+        direction: 'top',
+        offset: [0, -14],
+        opacity: 0.9,
+      });
+      centerMarker.on('dragend', () => {
+        const pos = centerMarker.getLatLng();
+        setCenterLat(pos.lat);
+        setCenterLon(pos.lng);
+        setLocationSource('Dragged map marker');
+        setCoordError(null);
+      });
+      overlayGroup.addLayer(centerMarker);
+    }
 
-    // E. Hotspot Markers
-    if (showGridPatches && Array.isArray(gridData) && gridData.length > 0) {
+    // E. Model patches placed within the user-positioned illustrative extent.
+    if (locationSelected && showGridPatches && Array.isArray(gridData) && gridData.length > 0) {
       const southWest = L.latLng(centerLat - dLat, centerLon - dLon);
       const northEast = L.latLng(centerLat + dLat, centerLon + dLon);
       const latSpan = northEast.lat - southWest.lat;
@@ -347,10 +368,10 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
           const cellSev = typeof cell.severity === 'number' ? cell.severity.toFixed(1) : '0.0';
           circle.bindPopup(`
             <div style="font-family: inherit; font-size: 12px; line-height: 1.45; color: #0f172a;">
-              <strong style="color: ${color};">Hotspot #${idx + 1}</strong><br/>
-              <b>Pathogen:</b> ${cell.disease || diseaseType}<br/>
+              <strong style="color: ${color};">Model patch #${idx + 1}</strong><br/>
+              <b>Model output:</b> ${escapeHtml(cell.disease || 'Not provided')}<br/>
               <b>Severity:</b> ${cellSev}%<br/>
-              <b>Coords:</b> ${cellLat.toFixed(6)}, ${cellLon.toFixed(6)}
+              <b>Approx. overlay position:</b> ${cellLat.toFixed(6)}, ${cellLon.toFixed(6)}
             </div>
           `);
           circle.on('click', () => {
@@ -361,10 +382,10 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
         });
     }
   }, [
-    centerLat, centerLon, dLat, dLon, bounds,
+    centerLat, centerLon, dLat, dLon, bounds, locationSelected,
     imageUrl, heatmapDataUrl, gridData,
     showPhoto, showHeatmap, showGridPatches, overlayOpacity,
-    diseaseType, onSelectCell,
+      onSelectCell,
   ]);
 
   // Handlers
@@ -378,6 +399,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     setCoordError(null);
     setCenterLat(parsed.lat);
     setCenterLon(parsed.lon);
+    setLocationSelected(true);
+    setLocationSource('Pasted coordinates');
     fitFieldView(parsed.lat, parsed.lon, widthMeters, heightMeters);
   };
 
@@ -394,6 +417,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
         const nextLon = pos.coords.longitude;
         setCenterLat(nextLat);
         setCenterLon(nextLon);
+        setLocationSelected(true);
+        setLocationSource('Device GPS');
         setLocatingGps(false);
         fitFieldView(nextLat, nextLon, widthMeters, heightMeters);
       },
@@ -411,6 +436,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     const c = map.getCenter();
     setCenterLat(c.lat);
     setCenterLon(c.lng);
+    setLocationSelected(true);
+    setLocationSource('Map view center');
     setCoordError(null);
   };
 
@@ -420,6 +447,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
     const nextLon = centerLon + eastMeters / (METERS_PER_DEG_LAT * cosLat);
     setCenterLat(nextLat);
     setCenterLon(nextLon);
+    setLocationSelected(true);
+    setLocationSource('Adjusted map position');
   };
 
   const handleWidthChange = (nextW: number) => {
@@ -462,18 +491,21 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             className="gis-mini-btn"
             onClick={handleCopyCoords}
             title="Copy coordinates"
+            aria-label="Copy current coordinates"
+            disabled={!locationSelected}
           >
             {copied ? <Check size={13} color="var(--success)" /> : <Copy size={13} />}
           </button>
-          <a
+          {locationSelected && <a
             href={googleMapsUrl}
             target="_blank"
             rel="noreferrer"
             className="gis-mini-btn"
-            title="Open current plot in Google Maps"
+            title="Open the user-positioned location in Google Maps"
+            aria-label="Open user-positioned location in Google Maps"
           >
             <ExternalLink size={13} />
-          </a>
+          </a>}
         </div>
 
         <div className="gis-coord-actions">
@@ -495,8 +527,15 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
 
       {coordError && <div className="gis-error-banner">{coordError}</div>}
 
+      <div className="gis-provenance-note" role="note">
+        {locationSelected
+          ? `Illustrative placement from ${locationSource || 'user-provided coordinates'}. The adjustable rectangle is not a measured field boundary. Image and patch overlays are aligned to this extent; map patch markers use a display threshold of severity above 35 and approximate positions.`
+          : 'No field location was provided. Paste coordinates, approve device GPS, or use map placement before adding an illustrative extent.'}
+      </div>
+
       {/* ── Leaflet Satellite Map Stage ── */}
       <div className={`gis-map-stage ${tapToPlace ? 'gis-cursor-crosshair' : ''}`}>
+        {!locationSelected && <div className="gis-map-empty-note">Choose a location above to show the illustrative plot extent.</div>}
         <div ref={mapContainerRef} className="gis-leaflet-canvas" />
 
         {/* Floating Layer Toolbar */}
@@ -505,21 +544,24 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             type="button"
             className={`gis-toolbar-btn ${activeLayer === 'satellite' ? 'active' : ''}`}
             onClick={() => setActiveLayer('satellite')}
+            aria-pressed={activeLayer === 'satellite'}
           >
-            🛰️ Satellite
+            Satellite
           </button>
           <button
             type="button"
             className={`gis-toolbar-btn ${activeLayer === 'street' ? 'active' : ''}`}
             onClick={() => setActiveLayer('street')}
+            aria-pressed={activeLayer === 'street'}
           >
-            🗺️ Street
+            Street
           </button>
           <button
             type="button"
             className={`gis-toolbar-btn ${showPhoto ? 'active' : ''}`}
             onClick={() => setShowPhoto((v) => !v)}
-            title="Toggle drone/field photo underlay"
+            aria-pressed={showPhoto}
+            title="Toggle field image underlay aligned to the illustrative extent"
           >
             <ImageIcon size={13} /> Photo
           </button>
@@ -527,7 +569,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             type="button"
             className={`gis-toolbar-btn ${showHeatmap ? 'active' : ''}`}
             onClick={() => setShowHeatmap((v) => !v)}
-            title="Toggle AI thermal disease heatmap"
+            aria-pressed={showHeatmap}
+            title="Toggle the severity overlay aligned to the illustrative extent"
           >
             <Flame size={13} /> Heatmap
           </button>
@@ -535,18 +578,22 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             type="button"
             className={`gis-toolbar-btn ${showGridPatches ? 'active' : ''}`}
             onClick={() => setShowGridPatches((v) => !v)}
-            title="Toggle severe disease hotspot markers"
+            aria-pressed={showGridPatches}
+            title="Show model patches with severity above 35; map positions are approximate on this illustrative extent"
           >
-            📍 Hotspots
+            Patches &gt;35
           </button>
         </div>
 
-        {/* Bottom-Left Geodesic Telemetry Readout (clear of bottomright scale bar) */}
-        <div className="gis-telemetry-pill">
-          <span className="gis-telemetry-dot">● GIS Plot</span>
-          <span>{centerLat.toFixed(5)}°N, {centerLon.toFixed(5)}°E</span>
-          <span className="gis-sep">|</span>
-          <span>{widthMeters}m × {heightMeters}m ({areaStats.acres.toFixed(2)} ac)</span>
+        <div className="gis-telemetry-pill" role="status">
+          {locationSelected ? (
+            <>
+              <span className="gis-telemetry-dot">Illustrative placement · {locationSource}</span>
+              <span>{centerLat.toFixed(5)}°, {centerLon.toFixed(5)}°</span>
+              <span className="gis-sep">|</span>
+              <span>Estimated extent: {widthMeters}m × {heightMeters}m</span>
+            </>
+          ) : <span>Location not set · no field boundary available</span>}
         </div>
       </div>
 
@@ -564,11 +611,12 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
               <button
                 type="button"
                 className={`btn-icon ${tapToPlace ? 'active' : ''}`}
-                onClick={() => setTapToPlace((v) => !v)}
-                title="Click anywhere on the satellite map to place the field center"
+                    onClick={() => setTapToPlace((v) => !v)}
+                    aria-pressed={tapToPlace}
+                    title="Click anywhere on the map to set an illustrative center"
               >
                 <MapPin size={14} />
-                <span>{tapToPlace ? 'Tap Map: ON' : 'Tap Map to Move'}</span>
+                    <span>{tapToPlace ? 'Tap map to place' : locationSelected ? 'Tap map to move' : 'Place on map'}</span>
               </button>
               <button
                 type="button"
@@ -583,7 +631,8 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
                 type="button"
                 className="btn-icon"
                 onClick={() => fitFieldView()}
-                title="Zoom & center map back onto your field boundary"
+                disabled={!locationSelected}
+                title="Zoom & center map on the illustrative extent"
               >
                 <Maximize2 size={14} />
                 <span>Fit View</span>
@@ -594,10 +643,10 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
             <div className="gis-nudge-group">
               <span className="gis-nudge-label">Nudge ({nudgeStepMeters}m):</span>
               <div className="gis-nudge-pad">
-                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(0, -nudgeStepMeters)} title="Move West"><ArrowLeft size={13} /></button>
-                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(nudgeStepMeters, 0)} title="Move North"><ArrowUp size={13} /></button>
-                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(-nudgeStepMeters, 0)} title="Move South"><ArrowDown size={13} /></button>
-                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(0, nudgeStepMeters)} title="Move East"><ArrowRight size={13} /></button>
+                <button type="button" className="gis-nudge-btn"                 onClick={() => handleNudge(0, -nudgeStepMeters)} title="Move West" disabled={!locationSelected}><ArrowLeft size={13} /></button>
+                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(nudgeStepMeters, 0)} title="Move North" disabled={!locationSelected}><ArrowUp size={13} /></button>
+                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(-nudgeStepMeters, 0)} title="Move South" disabled={!locationSelected}><ArrowDown size={13} /></button>
+                <button type="button" className="gis-nudge-btn" onClick={() => handleNudge(0, nudgeStepMeters)} title="Move East" disabled={!locationSelected}><ArrowRight size={13} /></button>
               </div>
               <select
                 className="gis-step-select"
@@ -618,10 +667,10 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
           <div className="gis-control-header-row">
             <div className="gis-control-title">
               <Layers size={14} color="var(--primary)" />
-              <span>Field Plot Dimensions &amp; Overlay</span>
+              <span>Illustrative dimensions &amp; overlay</span>
             </div>
-            <div className="gis-area-badge">
-              {areaStats.hectares.toFixed(2)} ha · {areaStats.acres.toFixed(2)} acres
+            <div className="gis-area-badge" aria-label={`Illustrative area estimate: ${areaStats.hectares.toFixed(2)} hectares, ${areaStats.acres.toFixed(2)} acres`}>
+              Illustrative area estimate: {areaStats.hectares.toFixed(2)} ha · {areaStats.acres.toFixed(2)} acres
             </div>
           </div>
 

@@ -1,4 +1,4 @@
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import OverviewTab from '../components/tabs/OverviewTab';
 
@@ -55,6 +55,31 @@ describe('OverviewTab', () => {
     expect(screen.queryByText('Day 1')).not.toBeInTheDocument();
   });
 
+  it('hides predicted progression when no numeric observation is returned', async () => {
+    await act(async () => {
+      render(
+        <OverviewTab
+          lastScan={{
+            disease_type: 'Rice Blast',
+            average_severity: 20,
+            infection_rate: 8,
+            spread_risk: 'Low',
+            confidence: 85,
+            treatment: 'Observe field conditions.',
+            veg_coverage: 70,
+            grid_data: [],
+            temporal_available: true,
+            progression_data: [{ day: 'Day 1', actual: null, predicted: 30 }],
+            spectral_radar: [],
+          }}
+        />
+      );
+    });
+
+    expect(screen.getByText(/No measured temporal data available/i)).toBeInTheDocument();
+    expect(screen.queryByText('Day 1')).not.toBeInTheDocument();
+  });
+
   it('renders disease name in the Dominant Disease card when lastScan is provided', async () => {
     const mockScan = {
       disease_type: 'Rice Blast',
@@ -94,6 +119,20 @@ describe('OverviewTab', () => {
     });
     expect(screen.getByText('70')).toBeInTheDocument();
     expect(screen.getByText('/100')).toBeInTheDocument();
+  });
+
+  it('navigates to analysis tools through the existing tab routes', async () => {
+    const onNavigate = vi.fn();
+    await act(async () => {
+      render(<OverviewTab lastScan={null} onNavigate={onNavigate} />);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Analyze a field/i }));
+    expect(onNavigate).toHaveBeenCalledWith('field');
+    fireEvent.click(screen.getByRole('button', { name: /Scan a leaf/i }));
+    expect(onNavigate).toHaveBeenCalledWith('leaf');
+    fireEvent.click(screen.getByRole('button', { name: /View spectral data/i }));
+    expect(onNavigate).toHaveBeenCalledWith('spectral');
   });
 
   it('renders Smart Recommendation label', async () => {

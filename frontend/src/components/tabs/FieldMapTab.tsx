@@ -1,10 +1,10 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig } from 'framer-motion';
 import {
   Upload, Map as MapIcon,
   Activity, Zap, TrendingUp,
   MapPin, Eye, Layers, CheckCircle2, Sparkles,
-  Printer, Cpu, Image as ImageIcon,
+  Printer, Cpu,
   Bot, Send, MessageSquare, ShieldCheck,
   Award, ChevronRight
 } from 'lucide-react';
@@ -17,93 +17,54 @@ import ClinicalCertificateModal from '../ui/ClinicalCertificateModal';
 import FieldGisMap from '../ui/FieldGisMap';
 import type { FieldResult, GridCell, AiProviderStatus } from '../../types';
 
-// Inference stage labels shown during the 2-3 minute CPU run
-const INFERENCE_STAGES = [
-  { label: 'Preprocessing field image…',         pct: 8,  icon: ImageIcon },
-  { label: 'DINOv2 feature extraction…',          pct: 22, icon: Cpu },
-  { label: 'Adaptive grid analysis (64 patches)…', pct: 44, icon: Layers },
-  { label: 'Graph Transformer spatial reasoning…', pct: 62, icon: Activity },
-  { label: 'Disease cluster detection…',           pct: 76, icon: MapPin },
-  { label: 'Severity estimation & calibration…',   pct: 88, icon: Zap },
-  { label: 'Generating ICAR recommendations…',     pct: 96, icon: CheckCircle2 },
-];
-
-function InferenceProgress({
+export function InferenceProgress({
   imageUrl,
   streamProgress,
 }: {
   imageUrl: string | null;
   streamProgress: FieldStreamProgress | null;
 }) {
-  const [stageIdx, setStageIdx] = useState(0);
-  const [estimatedProgress, setEstimatedProgress] = useState(4);
-
-  const livePct = streamProgress?.percent ?? null;
-  const liveMessage = streamProgress?.message ?? null;
-  const displayProgress = livePct !== null ? livePct : estimatedProgress;
-
-  useEffect(() => {
-    if (streamProgress) return;
-    const timings = [3000, 12000, 18000, 14000, 12000, 10000, 8000];
-    let idx = 0;
-    let timer: ReturnType<typeof setTimeout>;
-    const advance = () => {
-      if (idx >= INFERENCE_STAGES.length - 1) return;
-      idx += 1;
-      setStageIdx(idx);
-      setEstimatedProgress(INFERENCE_STAGES[idx].pct);
-      timer = setTimeout(advance, timings[idx] || 10000);
-    };
-    setEstimatedProgress(INFERENCE_STAGES[0].pct);
-    timer = setTimeout(advance, timings[0]);
-    return () => clearTimeout(timer);
-  }, [streamProgress]);
-
-  const stage = INFERENCE_STAGES[stageIdx];
-  const StageIcon = stage.icon;
+  const livePct = typeof streamProgress?.percent === 'number'
+    ? Math.max(0, Math.min(100, streamProgress.percent))
+    : null;
+  const liveMessage = streamProgress?.message;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className="inference-progress-wrapper"
+      role="status"
+      aria-live="polite"
     >
       {imageUrl && (
         <div style={{ width: '100%', maxWidth: 480, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', marginBottom: 8 }}>
           <img src={imageUrl} alt="Uploaded field" style={{ width: '100%', maxHeight: 160, objectFit: 'cover', display: 'block', opacity: 0.7 }} />
         </div>
       )}
-      <div className="inference-spinner" />
+      <div className="inference-spinner" aria-hidden="true" />
       <div>
         <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
-          {streamProgress ? 'AgriPulse Live Stream Active' : 'AgriPulse AI Analysis Running'}
+          Field analysis in progress
         </div>
         <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          {streamProgress ? 'Receiving progress events from the backend' : 'Analysis is running; progress below is a timer-based estimate, not backend telemetry.'}
+          {liveMessage || 'Processing the submitted image. Progress percentage is unavailable.'}
         </div>
       </div>
       <div className="inference-progress-bar-track" style={{ width: '100%', maxWidth: 480 }}>
-        <div className="inference-progress-bar-fill" style={{ width: `${displayProgress}%` }} />
-      </div>
-      <div className="inference-stage-label">
-        <StageIcon size={14} color="var(--primary)" />
-        <span>{liveMessage || stage.label}</span>
-        <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)', fontSize: '0.78rem' }}>
-          {livePct !== null ? `${displayProgress}% · backend` : `~${displayProgress}% · estimate`}
-        </span>
-      </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
-        {INFERENCE_STAGES.map((_, i) => (
+        {livePct !== null ? (
           <div
-            key={i}
-            style={{
-              width: 8, height: 8, borderRadius: '50%',
-              background: i <= (livePct !== null ? Math.floor((livePct / 100) * INFERENCE_STAGES.length) : stageIdx) ? 'var(--primary)' : 'var(--border)',
-              transition: 'background 0.4s ease',
-            }}
+            className="inference-progress-bar-fill"
+            role="progressbar"
+            aria-label="Backend-reported field analysis progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={livePct}
+            style={{ width: `${livePct}%` }}
           />
-        ))}
+        ) : <div className="inference-progress-bar-indeterminate" aria-hidden="true" />}
       </div>
+      {livePct !== null && <p className="inference-stage-label">{livePct}% complete · backend reported</p>}
     </motion.div>
   );
 }
@@ -138,6 +99,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
     text: string;
     model?: string;
     provider?: string;
+    grounding_source?: string;
     timestamp?: string;
   }>>([]);
   const [aiStatus, setAiStatus] = useState<AiProviderStatus | null>(null);
@@ -163,11 +125,11 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         disease_type: localResults.disease_type,
         average_severity: localResults.average_severity,
         infection_rate: localResults.infection_rate,
-        spread_risk: localResults.spread_risk || 'MODERATE',
+        spread_risk: localResults.spread_risk?.trim() || 'UNAVAILABLE',
         clusters: localResults.clusters || [],
-        vegetation_coverage: localResults.veg_coverage || 85.0,
-        land_area: 1.0,
-        area_unit: 'acre',
+        ...(typeof localResults.veg_coverage === 'number'
+          ? { vegetation_coverage: localResults.veg_coverage }
+          : {}),
         history: copilotMessages.map(m => ({ role: m.role, content: m.text })),
       });
 
@@ -176,6 +138,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         text: res.answer,
         model: res.model,
         provider: res.provider,
+        grounding_source: res.grounding_source,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setCopilotMessages(prev => [...prev, assistantMsg]);
@@ -278,17 +241,17 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
     !heatmapImgFailed && localResults?.heatmap_base64
       ? `data:image/png;base64,${localResults.heatmap_base64}`
       : fallbackHeatmapUrl;
-  const infectedPct =
-    localResults?.percentage_infected_area ??
-    localResults?.infection_rate ??
-    0;
-  const healthyPct =
-    localResults?.percentage_healthy_area ??
-    (localResults ? Math.max(0, 100 - infectedPct) : 100);
+  const infectedPct = localResults
+    ? localResults.percentage_infected_area ?? localResults.infection_rate ?? null
+    : null;
+  const healthyPct = localResults
+    ? localResults.percentage_healthy_area ?? (infectedPct !== null ? Math.max(0, 100 - infectedPct) : null)
+    : null;
   const clusters = localResults?.clusters || [];
   const delta = localResults?.disease_increasing_pct;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="dashboard-container field-layout">
       {/* ── HEADER ACTION CARD ── */}
       <div className="card field-header-card">
@@ -297,7 +260,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
             <Activity color="var(--primary)" size={22} /> Field-Level Spatial Diagnosis
           </h2>
           <p className="field-header-card__sub">
-            Adaptive grid-based canopy pathology & ICAR-grounded decision support.
+            Adaptive grid-based field analysis with scan-specific results and clearly labeled context.
           </p>
         </div>
         <div className="field-header-card__actions">
@@ -383,9 +346,9 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
               </button>
             </div>
             <div style={{ marginTop: 24, display: 'flex', gap: 16, justifyContent: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-              <span>✓ 64-Patch Adaptive Grid</span>
-              <span>✓ Moran&apos;s I Autocorrelation</span>
-              <span>✓ ICAR Treatment Rules</span>
+                  <span>Adaptive grid analysis</span>
+                  <span>Image-based scan output</span>
+                  <span>Backend results shown as returned</span>
             </div>
           </div>
         </div>
@@ -409,7 +372,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   alignItems: 'center',
                   gap: 6
                 }}>
-                  <Sparkles size={14} /> AI Decision Engine Recommendation
+                  <Sparkles size={14} /> Scan result
                 </div>
                 <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '-0.025em' }}>
                   {localResults.disease_type === 'Healthy' ? 'Field is Healthy' : `Action Required: ${localResults.disease_type}`}
@@ -417,6 +380,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: 1.6 }}>
                   {localResults.treatment}
                 </p>
+                <p className="overview-validation-desc">Guidance is shown as returned by the service; verify treatment decisions with a qualified local agronomist.</p>
                 {localResults.farmer_friendly && (
                   <div className="decision-summary-box">
                     <p style={{ color: 'var(--primary)', fontSize: '0.78rem', fontWeight: 800, margin: '0 0 4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Farmer Summary</p>
@@ -433,29 +397,29 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
               <div className="decision-stat-card">
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Severity</div>
-                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: localResults.average_severity > 50 ? 'var(--danger)' : localResults.average_severity > 20 ? 'var(--warning)' : 'var(--success)' }}>
-                    {localResults.average_severity > 50 ? 'Severe' : localResults.average_severity > 20 ? 'Moderate' : 'Low'}
+                  <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    {typeof localResults.average_severity === 'number' ? `${localResults.average_severity.toFixed(1)}%` : 'Unavailable'}
                   </div>
                 </div>
                 <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Infected Area</div>
                   <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {infectedPct.toFixed(1)}%
+                    {infectedPct !== null ? `${infectedPct.toFixed(1)}%` : 'Unavailable'}
                   </div>
                 </div>
                 <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Spread Risk</div>
                   <div style={{ fontSize: '1.35rem', fontWeight: 800, color: localResults.spread_risk === 'High' ? 'var(--danger)' : 'var(--success)' }}>
-                    {localResults.spread_risk}
+                    {localResults.spread_risk || 'Not returned'}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Economic ROI Impact & 14-Day Progression Simulator */}
+            {/* Illustrative scenario tools; assumptions are disclosed in each widget. */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 20 }}>
             <EconomicImpactWidget
               diseaseType={localResults.disease_type}
@@ -469,45 +433,41 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
 
             {/* ── COLLAPSIBLE SCIENTIFIC DIAGNOSTICS DRAWER ── */}
             <div className="scientific-drawer">
-              <div 
+              <button
+                type="button"
                 className="scientific-drawer-header"
-                onClick={() => setShowDiagnostics(!showDiagnostics)}
+                aria-expanded={showDiagnostics}
+                onClick={() => setShowDiagnostics((open) => !open)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span className="scientific-drawer-header__label">
                   <Cpu size={14} color="var(--primary)" />
-                  <strong>Scientific Diagnostics &amp; Vision Telemetry</strong>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                    (DINOv2 Embeddings · Moran&apos;s I · Spatial Graph)
-                  </span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span>{showDiagnostics ? 'Collapse' : 'Expand Details'}</span>
-                  <ChevronRight size={14} style={{ transform: showDiagnostics ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
-                </div>
-              </div>
+                  <strong>Scan diagnostics</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Moran&apos;s I and adaptive grid values</span>
+                </span>
+                <span className="scientific-drawer-header__action">
+                  <span>{showDiagnostics ? 'Hide details' : 'Show details'}</span>
+                  <ChevronRight size={14} aria-hidden="true" />
+                </span>
+              </button>
 
               {showDiagnostics && (
                 <div className="scientific-drawer-content">
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
                     <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Spatial Moran&apos;s I Index:</span><br/>
+                      <span style={{ color: 'var(--text-muted)' }}>Moran&apos;s I (backend-reported):</span><br/>
                       <strong style={{ color: 'var(--text-primary)' }}>
                         {typeof localResults.spatial_morans_i === 'number'
-                          ? `${localResults.spatial_morans_i >= 0 ? '+' : ''}${localResults.spatial_morans_i.toFixed(4)} (${localResults.spatial_morans_i > 0.15 ? 'Spatial Clustering' : 'Uniform / Scattered'})`
-                          : 'Unavailable (insufficient grid nodes)'}
+                          ? `${localResults.spatial_morans_i >= 0 ? '+' : ''}${localResults.spatial_morans_i.toFixed(4)}`
+                          : 'Unavailable'}
                       </strong>
                     </div>
                     <div>
                       <span style={{ color: 'var(--text-muted)' }}>Adaptive Grid Analysis:</span><br/>
-                      <strong style={{ color: 'var(--text-primary)' }}>{gridData.length} dense patches (8×8 grid)</strong>
+                      <strong style={{ color: 'var(--text-primary)' }}>{gridData.length} adaptive patches returned</strong>
                     </div>
                     <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Confidence Calibration:</span><br/>
-                      <strong style={{ color: 'var(--primary)' }}>{localResults.confidence.toFixed(1)}% (Temperature Scaled)</strong>
-                    </div>
-                    <div>
-                      <span style={{ color: 'var(--text-muted)' }}>Inference Architecture:</span><br/>
-                      <strong style={{ color: 'var(--text-primary)' }}>MobileNetV2 ONNX INT8 (2.42 MB)</strong>
+                      <span style={{ color: 'var(--text-muted)' }}>Scan confidence:</span><br/>
+                      <strong style={{ color: 'var(--primary)' }}>{localResults.confidence.toFixed(1)}% · as returned by the backend</strong>
                     </div>
                   </div>
                 </div>
@@ -517,23 +477,23 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
 
           <div className="field-workspace-grid">
             
-            {/* ── PHASE 3: INTERACTIVE DISEASE HEATMAP ── */}
+            {/* Interactive scan-derived patch and severity views. */}
             <div className="card" style={{ padding: 20, background: 'var(--bg-card)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
                 <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: '1rem' }}>
                   <MapPin size={18} color="var(--primary)" /> Spatial Disease Map
                 </h4>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <button className={`btn-icon ${viewMode === 'ai_overlay' ? 'active' : ''}`} onClick={() => setViewMode('ai_overlay')}>
-                    <Zap size={14}/> AI Thermal Map
+                  <button type="button" className={`btn-icon ${viewMode === 'ai_overlay' ? 'active' : ''}`} aria-pressed={viewMode === 'ai_overlay'} onClick={() => setViewMode('ai_overlay')}>
+                    <Zap size={14}/> Severity Overlay
                   </button>
-                  <button className={`btn-icon ${viewMode === 'heatmap' ? 'active' : ''}`} onClick={() => setViewMode('heatmap')}>
+                  <button type="button" className={`btn-icon ${viewMode === 'heatmap' ? 'active' : ''}`} aria-pressed={viewMode === 'heatmap'} onClick={() => setViewMode('heatmap')}>
                     <Layers size={14}/> Grid Map
                   </button>
-                  <button className={`btn-icon ${viewMode === 'image' ? 'active' : ''}`} onClick={() => setViewMode('image')}>
+                  <button type="button" className={`btn-icon ${viewMode === 'image' ? 'active' : ''}`} aria-pressed={viewMode === 'image'} onClick={() => setViewMode('image')}>
                     <Eye size={14}/> Original
                   </button>
-                  <button className={`btn-icon ${viewMode === 'gis_map' ? 'active' : ''}`} onClick={() => setViewMode('gis_map')}>
+                  <button type="button" className={`btn-icon ${viewMode === 'gis_map' ? 'active' : ''}`} aria-pressed={viewMode === 'gis_map'} onClick={() => setViewMode('gis_map')}>
                     <MapIcon size={14}/> GIS Satellite
                   </button>
                 </div>
@@ -544,7 +504,6 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   imageUrl={imageUrl}
                   heatmapDataUrl={effectiveHeatmapUrl}
                   gridData={gridData}
-                  diseaseType={localResults?.disease_type}
                   averageSeverity={localResults?.average_severity}
                   onSelectCell={setSelectedCell}
                 />
@@ -559,11 +518,11 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                         style={{ opacity: viewMode === 'image' ? 1 : 0.9 }}
                       />
 
-                      {/* Mode 1: AI Thermal Map (Gaussian thermal overlay + interactive patch inspection) */}
+                      {/* Derived severity visualization aligned to model grid patches. */}
                       {viewMode === 'ai_overlay' && effectiveHeatmapUrl && (
                         <img
                           src={effectiveHeatmapUrl}
-                          alt="AI Disease Heatmap"
+                          alt="Derived severity visualization from field scan output"
                           className="spatial-heatmap-img"
                           style={{ opacity: heatmapOpacity }}
                           onError={() => {
@@ -578,9 +537,12 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                             const isSelected = selectedCell === cell;
                             const isHovered = hoveredCell === cell;
                             return (
-                              <div
+                              <button
                                 key={idx}
+                                type="button"
                                 className={`spatial-hit-cell ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
+                                aria-label={`Patch ${idx + 1}, ${cell.disease}, severity ${cell.severity.toFixed(1)} percent`}
+                                aria-pressed={isSelected}
                                 style={{
                                   left: `${cell.x_percent}%`,
                                   top: `${cell.y_percent}%`,
@@ -589,6 +551,8 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                                 }}
                                 onMouseEnter={() => setHoveredCell(cell)}
                                 onMouseLeave={() => setHoveredCell(null)}
+                                onFocus={() => setHoveredCell(cell)}
+                                onBlur={() => setHoveredCell(null)}
                                 onClick={() => setSelectedCell(cell)}
                               />
                             );
@@ -607,8 +571,12 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                             const border = sev > 50 ? '#dc2626' : sev > 20 ? '#d97706' : '#10b981';
 
                             return (
-                              <div
+                              <button
                                 key={idx}
+                                type="button"
+                                className="spatial-grid-cell"
+                                aria-label={`Patch ${idx + 1}, ${cell.disease}, severity ${cell.severity.toFixed(1)} percent`}
+                                aria-pressed={isSelected}
                                 style={{
                                   position: 'absolute',
                                   left: `${cell.x_percent}%`,
@@ -619,7 +587,6 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                                   border: isSelected ? '2px solid #ffffff' : `1px solid ${border}`,
                                   boxShadow: isSelected ? '0 0 0 2px #0f172a, 0 0 8px rgba(0,0,0,0.6)' : isHovered ? `0 0 6px ${border}` : 'none',
                                   transition: 'all 0.15s ease-out',
-                                  cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -631,10 +598,12 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                                 }}
                                 onMouseEnter={() => setHoveredCell(cell)}
                                 onMouseLeave={() => setHoveredCell(null)}
+                                onFocus={() => setHoveredCell(cell)}
+                                onBlur={() => setHoveredCell(null)}
                                 onClick={() => setSelectedCell(cell)}
                               >
                                 {showCellLabels && sev > 15 && `${sev.toFixed(0)}%`}
-                              </div>
+                              </button>
                             );
                           })}
                         </div>
@@ -647,7 +616,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   {/* Floating Hover Tooltip */}
                   {hoveredCell && viewMode !== 'image' && (
                     <div className="spatial-hover-tooltip">
-                      <span>📍 Patch ({hoveredCell.x_percent.toFixed(0)}%, {hoveredCell.y_percent.toFixed(0)}%)</span>
+                          <span>Patch position ({hoveredCell.x_percent.toFixed(0)}%, {hoveredCell.y_percent.toFixed(0)}%)</span>
                       <span style={{ color: hoveredCell.severity > 50 ? '#f87171' : hoveredCell.severity > 20 ? '#fbbf24' : '#4ade80', fontWeight: 700 }}>
                         Severity: {hoveredCell.severity.toFixed(1)}%
                       </span>
@@ -659,18 +628,18 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
 
               {/* View Controls & Legend Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 12 }}>
-                <div style={{ display: 'flex', gap: 16, fontSize: '0.8rem', background: 'var(--bg-subtle)', padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                <div role="group" aria-label="Visual severity display bands, not disease severity classifications" style={{ display: 'flex', gap: 16, fontSize: '0.8rem', background: 'var(--bg-subtle)', padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ width: 10, height: 10, background: 'var(--success)', borderRadius: 2 }} />
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Healthy (&lt;20%)</span>
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Lower display band (&lt;20%)</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ width: 10, height: 10, background: 'var(--warning)', borderRadius: 2 }} />
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Moderate (20–50%)</span>
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Midrange display band (20–50%)</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <div style={{ width: 10, height: 10, background: 'var(--danger)', borderRadius: 2 }} />
-                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Severe (&gt;50%)</span>
+                      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Higher display band (&gt;50%)</span>
                   </div>
                 </div>
 
@@ -721,16 +690,16 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 <div style={{ display: 'grid', gap: 12 }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', marginBottom: 4 }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Healthy Biomass</span>
-                      <strong style={{ color: 'var(--success)' }}>{healthyPct.toFixed(1)}%</strong>
+                      <span style={{ color: 'var(--text-secondary)' }}>Non-infected area {localResults.percentage_healthy_area == null ? '(derived)' : ''}</span>
+                      <strong style={{ color: 'var(--success)' }}>{healthyPct !== null ? `${healthyPct.toFixed(1)}%` : 'Unavailable'}</strong>
                     </div>
-                    <div style={{ width: '100%', height: 6, background: 'var(--bg-subtle)', borderRadius: 3, overflow: 'hidden' }}>
+                    {healthyPct !== null && <div style={{ width: '100%', height: 6, background: 'var(--bg-subtle)', borderRadius: 3, overflow: 'hidden' }}>
                       <div style={{ width: `${healthyPct}%`, height: '100%', background: 'var(--success)', borderRadius: 3 }} />
-                    </div>
+                    </div>}
                   </div>
 
                   {clusters.length === 0 ? (
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No disease clusters detected.</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>No disease clusters were returned for this scan.</div>
                   ) : (
                     clusters.map(c => (
                       <div key={c.id}>
@@ -755,7 +724,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 
                 {clusters.length === 0 ? (
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                    <CheckCircle2 size={16} color="var(--success)" /> No infected clusters found.
+                    <CheckCircle2 size={16} color="var(--success)" /> No infected clusters were returned for this scan.
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gap: 10 }}>
@@ -830,11 +799,11 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                     <Bot size={20} color="var(--primary)" />
                   </div>
                   <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Dr. AgriPulse — Field Spatial Reasoning Engine
+                    Field Scan Assistant
                   </h3>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  Advanced epidemiological reasoning grounded in 64-patch DINOv2 vision telemetry and ICAR-IRRI precision protocols.
+                  Ask about values returned for this scan. Verify actionable decisions with local expertise and product labels.
                 </p>
               </div>
 
@@ -846,8 +815,8 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)',
                 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary)', display: 'inline-block', boxShadow: '0 0 8px var(--primary)' }} />
-                  {aiStatus?.display_name || 'ICAR Deterministic Decision Engine'}
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: aiStatus?.display_name ? 'var(--primary)' : 'var(--text-muted)', display: 'inline-block' }} />
+                  {aiStatus?.display_name ? `Service-reported: ${aiStatus.display_name}` : 'Service status unavailable'}
                 </div>
 
                 <div style={{
@@ -858,7 +827,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                   fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)',
                 }}>
                   <ShieldCheck size={14} color="var(--primary)" />
-                  ICAR / IRRI Telemetry-Grounded
+                  Current scan context attached
                 </div>
               </div>
             </div>
@@ -866,57 +835,65 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
             {/* Quick Action Suggestion Pills */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
-                Recommended Agronomic Inquiries for this Field Scan
+                Questions about this field scan
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {[
                   {
-                    icon: '🎯',
-                    label: 'Spot-Spray Containment',
-                    q: `How should I set up a barrier buffer to isolate the ${clusters.length} detected clusters and contain ${localResults.disease_type} without spraying the whole field?`,
+                    icon: Layers,
+                    label: 'Explain the map patches',
+                    q: 'Explain how the scan patches and map overlays are displayed. Distinguish returned scan data from approximate map placement.',
                   },
                   {
-                    icon: '🧪',
-                    label: 'Knapsack Tank Dilution',
-                    q: `Calculate the exact 16L knapsack sprayer tanks, chemical dosage, and water required for the ${localResults.infection_rate.toFixed(1)}% infected acreage.`,
+                    icon: Activity,
+                    label: 'Interpret scan values',
+                    q: 'Explain the severity and infection values returned for this scan. State what cannot be inferred from these values alone.',
                   },
                   {
-                    icon: '🌧️',
-                    label: 'Weather & Spread Vectors',
-                    q: `Given the ${localResults.spread_risk || 'MODERATE'} spread risk, what weather window or wind speed should I look for before spraying?`,
+                    icon: ShieldCheck,
+                    label: 'What should I verify?',
+                    q: 'What additional field observations and local product-label guidance should be checked before making a treatment decision? Do not invent a dose, area, or expected outcome.',
                   },
                   {
-                    icon: '📉',
-                    label: 'Economic Loss Risk',
-                    q: `What is the economic loss and yield penalty risk at ${localResults.average_severity.toFixed(1)}% average canopy severity if treatment is delayed 48 hours?`,
+                    icon: MapPin,
+                    label: 'Review data limits',
+                    q: 'Summarize which details in this scan are backend-reported and identify any missing information that limits interpretation.',
                   },
-                ].map((pill, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="btn-icon"
-                    disabled={copilotLoading}
-                    onClick={() => handleCopilotAsk(pill.q)}
-                    style={{
-                      padding: '7px 14px',
-                      fontSize: '0.78rem',
-                      borderRadius: 20,
-                      background: 'var(--bg-subtle)',
-                      border: '1px solid var(--border)',
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                  >
-                    <span>{pill.icon}</span>
-                    <span style={{ fontWeight: 600 }}>{pill.label}</span>
-                  </button>
-                ))}
+                ].map((pill, idx) => {
+                  const PillIcon = pill.icon;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="btn-icon"
+                      disabled={copilotLoading}
+                      onClick={() => handleCopilotAsk(pill.q)}
+                      style={{
+                        padding: '7px 14px',
+                        fontSize: '0.78rem',
+                        borderRadius: 20,
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border)',
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <PillIcon size={14} aria-hidden="true" />
+                      <span style={{ fontWeight: 600 }}>{pill.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Chat Thread Messages */}
-            <div style={{
+            <div
+              role="log"
+              aria-label="Field scan consultation messages"
+              aria-live="polite"
+              aria-relevant="additions"
+              style={{
               minHeight: 120,
               maxHeight: 380,
               overflowY: 'auto',
@@ -944,7 +921,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                     Field Intelligence Copilot Ready
                   </div>
                   <div style={{ fontSize: '0.8rem', maxWidth: 440, marginTop: 4 }}>
-                    Ask questions about spatial containment, spot spraying, barrier perimeters, knapsack pumps, or economic thresholds.
+                    Ask about the returned scan values, approximate map placement, or which missing details limit interpretation.
                   </div>
                 </div>
               ) : (
@@ -968,10 +945,10 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                       {msg.role === 'assistant' ? (
                         <>
                           <Sparkles size={12} color="var(--primary)" />
-                          <strong style={{ color: 'var(--primary)' }}>Dr. AgriPulse ({msg.model || 'ICAR Grounded Engine'})</strong>
+                          <strong style={{ color: 'var(--primary)' }}>{msg.provider || (msg.model ? 'Analysis service' : 'Analysis response')}{msg.model ? ` · ${msg.model}` : ''}</strong>
                         </>
                       ) : (
-                        <span>You (Agronomist)</span>
+                        <span>You</span>
                       )}
                       {msg.timestamp && <span>· {msg.timestamp}</span>}
                     </div>
@@ -989,6 +966,11 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                     }}>
                       {msg.text}
                     </div>
+                    {msg.role === 'assistant' && msg.grounding_source && (
+                      <span style={{ maxWidth: '92%', marginTop: 4, fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                        Response source: {msg.grounding_source}
+                      </span>
+                    )}
                   </div>
                 ))
               )}
@@ -997,7 +979,7 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 10, border: '1px solid var(--border)', width: 'fit-content' }}>
                   <div className="inference-spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Analyzing spatial canopy telemetry against ICAR protocols…
+                    Preparing a response from the scan context…
                   </span>
                 </div>
               )}
@@ -1017,7 +999,8 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
                 type="text"
                 value={copilotQuestion}
                 onChange={(e) => setCopilotQuestion(e.target.value)}
-                placeholder={`Ask a question about this ${localResults.disease_type} field scan (e.g. spray buffer size, ULV drone spray, dosage)...`}
+                aria-label="Ask a question about this field scan"
+                placeholder="Ask about the returned scan values or what to verify next…"
                 disabled={copilotLoading}
                 style={{
                   flex: 1,
@@ -1058,5 +1041,6 @@ export default function FieldMapTab({ onScanComplete, backendOnline, addToast }:
         scanResult={localResults}
       />
     </div>
+    </MotionConfig>
   );
 }
