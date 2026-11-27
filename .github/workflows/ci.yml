@@ -30,10 +30,6 @@ jobs:
       - name: Run Ruff Linter
         run: ruff check backend/app/ backend/tests/
 
-      - name: Train synthetic weights (needed for inference tests)
-        working-directory: backend
-        run: python scripts/train_synthetic.py
-
       - name: Run pytest with coverage
         working-directory: backend
         run: pytest tests/ -v --tb=short --cov=app --cov-report=xml
