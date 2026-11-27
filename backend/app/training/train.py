@@ -1,7 +1,3 @@
-from app.training.trainer import Trainer  # noqa: E402
-from app.training.model_wrapper import AgriPulseTrainingWrapper  # noqa: E402
-from app.training.datamodule import AgriPulseDataModule  # noqa: E402
-from app.training.config import TrainingConfig  # noqa: E402
 import argparse
 import logging
 import os
@@ -10,6 +6,11 @@ import sys
 
 import numpy as np
 import torch
+
+from app.training.config import TrainingConfig  # noqa: E402
+from app.training.datamodule import AgriPulseDataModule  # noqa: E402
+from app.training.model_wrapper import AgriPulseTrainingWrapper  # noqa: E402
+from app.training.trainer import Trainer  # noqa: E402
 
 # Ensure backend root is in path
 sys.path.append(

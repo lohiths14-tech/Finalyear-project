@@ -14,7 +14,6 @@ import pytest
 
 from app.services.inference_service import DISEASE_CLASSES, InferenceService
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
 @pytest.fixture(scope="module")

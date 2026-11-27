@@ -2,7 +2,7 @@
 ORM model — persists every scan result to SQLite.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import uuid
 
 from sqlalchemy import Column, DateTime, Float, String, Text
@@ -21,7 +21,7 @@ class ScanResult(Base):
     confidence = Column(Float, nullable=False)
     spread_risk = Column(String, nullable=True)  # field-only
     treatment = Column(String, nullable=False)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     full_results = Column(Text, nullable=False)  # JSON blob
 
 class User(Base):

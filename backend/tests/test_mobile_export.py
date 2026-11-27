@@ -6,10 +6,10 @@ Verifies that all 4 exported TorchScript mobile models load and compute
 deterministic forward passes identical to native PyTorch models.
 """
 
-import os
+from pathlib import Path
+
 import pytest
 import torch
-from pathlib import Path
 
 # Points to workspace_root/model_weights/mobile
 MOBILE_DIR = Path(__file__).resolve().parent.parent.parent / "model_weights" / "mobile"
@@ -69,8 +69,8 @@ class TestMobileExport:
 
     def test_onnx_mobilenet_quant_forward(self):
         """Verifies MobileNetV2 INT8 quantized ONNX forward pass."""
-        import onnxruntime as ort
         import numpy as np
+        import onnxruntime as ort
 
         onnx_path = Path(__file__).resolve().parent.parent / "model_weights" / "onnx" / "mobilenet_v2_quant.onnx"
         if not onnx_path.exists():

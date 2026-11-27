@@ -2,8 +2,9 @@
 Tests for AgriPulse 2.0 Kubernetes Health Probes and Prometheus Metrics.
 """
 
+from httpx import ASGITransport, AsyncClient
 import pytest
-from httpx import AsyncClient, ASGITransport
+
 from app.main import app
 
 

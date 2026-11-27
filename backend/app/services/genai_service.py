@@ -12,18 +12,19 @@ Architecture:
     seamlessly to the internal deterministic ICAR RAG engine with zero crashes.
 """
 
-import os
+from datetime import UTC, datetime
 import json
 import logging
-from typing import Dict, Any, List, Optional
-import urllib.request
+import os
+from typing import Any
 import urllib.parse
-from datetime import datetime, timezone
+import urllib.request
 
-from ..core.agronomy_engine import AGRONOMIC_KNOWLEDGE, calculate_agronomic_dosage
+from ..core.agronomy_engine import (
+    AGRONOMIC_KNOWLEDGE,
+    calculate_agronomic_dosage,
+)
 from ..core.config import settings
-
-import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +33,17 @@ class GenAIAgronomyService:
     def __init__(self):
         self.gemini_api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
         self.openai_api_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)
-        
+
         if self.gemini_api_key:
             self.provider = "gemini"
         elif self.openai_api_key:
             self.provider = "openai"
         else:
             self.provider = "icar_rag_local"
-            
+
         logger.info(f"GenAIAgronomyService initialized with provider: {self.provider}")
 
-    def get_provider_status(self) -> Dict[str, Any]:
+    def get_provider_status(self) -> dict[str, Any]:
         """Returns the active GenAI provider status and capabilities."""
         if self.provider == "gemini":
             model_id = "gemini-1.5-flash"
@@ -71,7 +72,7 @@ class GenAIAgronomyService:
             ]
         }
 
-    def _build_rag_context(self, disease_type: str, severity: float, farm_context: Optional[Dict[str, Any]] = None) -> str:
+    def _build_rag_context(self, disease_type: str, severity: float, farm_context: dict[str, Any] | None = None) -> str:
         """Retrieves and formats indexed ICAR agronomic facts to ground the LLM."""
         disease_key = "Healthy"
         for k in AGRONOMIC_KNOWLEDGE:
@@ -81,10 +82,9 @@ class GenAIAgronomyService:
 
         info = AGRONOMIC_KNOWLEDGE.get(disease_key, AGRONOMIC_KNOWLEDGE["Healthy"])
         chem = info.get("primary_chemical", {})
-        sec_chem = info.get("secondary_chemical", {})
 
         context_lines = [
-            f"=== VERIFIED ICAR/IRRI GROUNDED AGRONOMIC CONTEXT ===",
+            "=== VERIFIED ICAR/IRRI GROUNDED AGRONOMIC CONTEXT ===",
             f"Target Pathogen: {info.get('pathogen', 'N/A')}",
             f"Target Disease: {disease_key}",
             f"Observed Visual Severity: {severity:.1f}%",
@@ -116,9 +116,9 @@ class GenAIAgronomyService:
         disease_type: str = "Healthy",
         severity: float = 0.0,
         language: str = "en",
-        history: Optional[List[Dict[str, str]]] = None,
-        farm_context: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        history: list[dict[str, str]] | None = None,
+        farm_context: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """
         Multi-turn RAG-grounded chat with the AI Agronomist grounded in ICAR guidelines.
         """
@@ -149,7 +149,7 @@ class GenAIAgronomyService:
                         "model": "Gemini 1.5 Flash",
                         "grounding_source": "ICAR-IRRI Knowledge Base (RAG Verified)",
                         "language": language,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
             except Exception as e:
                 logger.warning(f"Gemini API call failed: {e}. Falling back...")
@@ -165,7 +165,7 @@ class GenAIAgronomyService:
                         "model": "GPT-4o Mini",
                         "grounding_source": "ICAR-IRRI Knowledge Base (RAG Verified)",
                         "language": language,
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
             except Exception as e:
                 logger.warning(f"OpenAI API call failed: {e}. Falling back to internal RAG engine.")
@@ -173,14 +173,14 @@ class GenAIAgronomyService:
         # 3. Fallback: High-Performance Internal ICAR RAG Engine
         from ..core.agronomy_engine import consult_agronomist
         fallback_answer = consult_agronomist(disease_type, severity, question)
-        
+
         return {
             "answer": fallback_answer,
             "provider": "icar_rag_engine_v2 (Grounded Local Fallback)",
             "model": "ICAR Deterministic Expert System",
             "grounding_source": "ICAR-IRRI Package of Practices (Zero-Hallucination Deterministic Engine)",
             "language": language,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def consult_field_intelligence(
@@ -190,12 +190,12 @@ class GenAIAgronomyService:
         average_severity: float,
         infection_rate: float,
         spread_risk: str,
-        clusters: Optional[List[Dict[str, Any]]] = None,
+        clusters: list[dict[str, Any]] | None = None,
         vegetation_coverage: float = 85.0,
         land_area: float = 1.0,
         area_unit: str = "acre",
-        history: Optional[List[Dict[str, str]]] = None,
-    ) -> Dict[str, Any]:
+        history: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         """
         Field-Level Spatial Intelligence Consultation grounded in DINOv2 vision telemetry and ICAR protocols.
         Provides spatial cluster containment, barrier buffer zones, and spot-spraying strategies.
@@ -265,7 +265,7 @@ class GenAIAgronomyService:
                             "spread_risk": spread_risk,
                             "cluster_count": len(clusters) if clusters else 0,
                         },
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
             except Exception as e:
                 logger.warning(f"Field Spatial Copilot call to Gemini failed: {e}")
@@ -286,7 +286,7 @@ class GenAIAgronomyService:
                             "spread_risk": spread_risk,
                             "cluster_count": len(clusters) if clusters else 0,
                         },
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
             except Exception as e:
                 logger.warning(f"Field Spatial Copilot call to OpenAI failed: {e}")
@@ -327,13 +327,13 @@ class GenAIAgronomyService:
                 "spread_risk": spread_risk,
                 "cluster_count": len(clusters) if clusters else 0,
             },
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
-    async def _call_gemini_api(self, system_prompt: str, question: str, history: Optional[List[Dict[str, str]]]) -> Optional[str]:
+    async def _call_gemini_api(self, system_prompt: str, question: str, history: list[dict[str, str]] | None) -> str | None:
         """Calls Google Gemini REST API."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
-        
+
         contents = []
         contents.append({
             "role": "user",
@@ -366,7 +366,7 @@ class GenAIAgronomyService:
                         return parts[0].get("text")
         return None
 
-    async def _call_openai_api(self, system_prompt: str, question: str, history: Optional[List[Dict[str, str]]]) -> Optional[str]:
+    async def _call_openai_api(self, system_prompt: str, question: str, history: list[dict[str, str]] | None) -> str | None:
         """Calls OpenAI REST API."""
         url = "https://api.openai.com/v1/chat/completions"
         messages = [{"role": "system", "content": system_prompt}]
@@ -412,7 +412,7 @@ class GenAIAgronomyService:
         land_area: float = 1.0,
         area_unit: str = "acre",
         growth_stage: str = "Tillering",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Generates a comprehensive Clinical Crop Pathology Audit Report
         combining DINOv2 vision analytics with ICAR treatment protocols.
@@ -425,7 +425,7 @@ class GenAIAgronomyService:
             growth_stage=growth_stage,
         )
 
-        report_id = f"AGRIPULSE-AUDIT-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+        report_id = f"AGRIPULSE-AUDIT-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
         is_healthy = "healthy" in disease_type.lower()
         urgency = "LOW" if is_healthy or severity < 20 else ("MODERATE" if severity < 45 else "HIGH (IMMEDIATE ACTION REQUIRED)")
 
@@ -449,7 +449,7 @@ class GenAIAgronomyService:
 
         return {
             "report_id": report_id,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "certification": "ICAR-IRRI Standardized Crop Intelligence Protocol",
             "farmer_profile": {
                 "farmer_name": farmer_name,

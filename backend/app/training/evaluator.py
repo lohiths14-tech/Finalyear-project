@@ -1,7 +1,7 @@
 import logging
 import os
 import time
-from typing import Any, Dict
+from typing import Any
 
 from PIL import Image
 import torch
@@ -34,7 +34,7 @@ class Evaluator:
         self.tracker = MetricTracker()
 
     @torch.no_grad()
-    def evaluate(self, dataloader: DataLoader) -> Dict[str, Any]:
+    def evaluate(self, dataloader: DataLoader) -> dict[str, Any]:
         self.model.eval()
         self.tracker.reset()
 
@@ -102,7 +102,7 @@ class Evaluator:
     @torch.no_grad()
     def evaluate_ood(
         self, ood_dir: str = "data/ood", confidence_threshold: float = 0.5
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         if not os.path.exists(ood_dir):
             logger.warning(
                 f"OOD directory '{ood_dir}' not found. Skipping OOD evaluation."  # noqa: E501

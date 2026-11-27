@@ -25,7 +25,6 @@ for the mapping protocol.
 import logging
 import math
 from pathlib import Path
-from typing import Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -171,7 +170,7 @@ class FoundationVisionEncoder(nn.Module):
         self,
         feature_dim: int = 64,
         pretrained: bool = False,
-        weights_path: Optional[Union[str, Path]] = None,
+        weights_path: str | Path | None = None,
     ):
         super().__init__()
         self.weights_path = weights_path
@@ -193,7 +192,7 @@ class FoundationVisionEncoder(nn.Module):
         )
 
     def _load_encoder(
-        self, weights_path: Optional[Union[str, Path]] = None
+        self, weights_path: str | Path | None = None
     ) -> nn.Module:
         logger = logging.getLogger(__name__)
         candidates = []
@@ -490,8 +489,8 @@ class CrossAttentionFusion(nn.Module):
         visual_feat: torch.Tensor,
         spatial_feat: torch.Tensor,
         temporal_feat: torch.Tensor,
-        env_data: Optional[torch.Tensor] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        env_data: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Args:
             visual_feat: (batch, feature_dim)

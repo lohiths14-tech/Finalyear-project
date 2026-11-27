@@ -1,0 +1,157 @@
+[tool.ruff]
+# Ruff configuration for agricultural disease detection project
+# Target Python 3.11+ as specified in backend/.python-version
+target-version = "py311"
+
+# Set line length to 120 characters
+line-length = 120
+
+# Include backend/app directory and subdirectories for linting
+include = ["backend/app/**/*.py", "backend/tests/**/*.py", "backend/scripts/**/*.py"]
+
+# Exclude common directories that don't need linting
+exclude = [
+    ".git",
+    ".venv*",
+    "__pycache__",
+    "*.egg-info",
+    ".pytest_cache",
+    ".ruff_cache",
+    "node_modules",
+    "venv",
+    ".hypothesis",
+    ".benchmarks",
+    "logs",
+    "data_cache",
+    "checkpoints",
+    "runs",
+]
+
+[tool.ruff.lint]
+# Enable all relevant error codes as specified:
+# E = pycodestyle errors (PEP 8 violations)
+# W = pycodestyle warnings (style issues)
+# F = pyflakes (unused imports, undefined names, etc.)
+# C90 = mccabe complexity checker
+# I = isort (import organization)
+# N = pep8-naming (naming conventions)
+# UP = pyupgrade (modern Python syntax)
+# B = flake8-bugbear (common bugs)
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings  
+    "F",    # pyflakes
+    "C90",  # mccabe complexity
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+]
+
+ignore = [
+    "E501",  # Long strings / prompts / URLs
+    "W505",  # Long docstrings
+    "B008",  # FastAPI Depends()/File()/Query() in defaults
+    "N806",  # ML tensor variable names (X, N, etc.)
+    "N812",  # Standard ML aliases (import torch.nn.functional as F)
+    "B904",  # Exception chaining style
+    "B905",  # zip() strict= parameter
+    "E402",  # Path-adjusted imports
+    "C901",  # Complex ML pipeline functions
+]
+
+# Don't automatically fix some potentially dangerous changes
+unfixable = [
+    "F841",  # Unused variables - require manual review
+]
+
+[tool.ruff.lint.mccabe]
+# Set complexity threshold to 10 or less as specified
+max-complexity = 10
+
+[tool.ruff.lint.pycodestyle]
+# Configure specific pycodestyle settings
+max-line-length = 120
+max-doc-length = 120
+
+[tool.ruff.lint.isort]
+# Configure import organization (PEP 8 order)
+force-single-line = false
+force-sort-within-sections = true
+known-first-party = ["app"]
+known-third-party = [
+    "fastapi",
+    "pydantic", 
+    "sqlalchemy",
+    "torch",
+    "torchvision",
+    "numpy",
+    "pandas",
+    "opencv",
+    "matplotlib",
+    "scipy",
+    "sklearn",
+    "albumentations",
+    "timm",
+    "ultralytics",
+    "mlflow",
+    "celery",
+    "redis",
+]
+section-order = [
+    "future",
+    "standard-library", 
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+
+[tool.ruff.format]
+# Configure code formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+# ── Pytest ────────────────────────────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+# ── Coverage ──────────────────────────────────────────────────────────────────
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/.venv*/*",
+    "*/migrations/*",
+    "*/alembic/*",
+    "*/__pycache__/*",
+    "*/scratch*",
+]
+branch = true
+
+[tool.coverage.report]
+# Fail if coverage drops below 85%
+fail_under = 85
+show_missing = true
+skip_covered = false
+precision = 1
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "backend/htmlcov"

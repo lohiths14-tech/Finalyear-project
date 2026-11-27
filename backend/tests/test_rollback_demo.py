@@ -6,9 +6,9 @@ This is a non-critical test file created specifically to demonstrate
 and validate the rollback procedures without affecting core functionality.
 """
 
+
 import pytest
-import sys
-from pathlib import Path
+
 
 def test_rollback_demo_basic():
     """Basic test that should always pass"""
@@ -16,8 +16,8 @@ def test_rollback_demo_basic():
 
 def test_rollback_demo_imports():
     """Test basic Python functionality"""
-    import os
     import json
+    import os
     assert os.path.exists(".")
     assert json.dumps({"test": True}) == '{"test": true}'
 
@@ -29,11 +29,11 @@ def test_rollback_demo_math():
 
 class TestRollbackDemoClass:
     """Demo test class for rollback validation"""
-    
+
     def test_class_method(self):
         """Test method in a test class"""
         assert "hello".upper() == "HELLO"
-    
+
     def test_list_operations(self):
         """Test list operations"""
         test_list = [1, 2, 3]

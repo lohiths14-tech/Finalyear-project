@@ -4,8 +4,8 @@ Grounded in ICAR (Indian Council of Agricultural Research) and IRRI Rice Knowled
 Includes FRAC/IRAC anti-resistance codes, Pre-Harvest Intervals (PHI), growth stages, and knapsack tank dosage calculations.
 """
 
-from typing import Dict, Any, List, Optional
 import math
+from typing import Any
 
 # Unit conversion to Acres
 AREA_CONVERSIONS_TO_ACRES = {
@@ -24,7 +24,7 @@ AREA_CONVERSIONS_TO_ACRES = {
     "sq_ft": 0.0000229568,
 }
 
-AGRONOMIC_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
+AGRONOMIC_KNOWLEDGE: dict[str, dict[str, Any]] = {
     "Rice Blast": {
         "pathogen": "Magnaporthe oryzae (fungus)",
         "optimal_conditions": "High relative humidity (>90%), leaf wetness duration >12h, temperatures 20-28°C, excess nitrogen (>120 kg N/ha).",
@@ -339,8 +339,8 @@ AGRONOMIC_KNOWLEDGE: Dict[str, Dict[str, Any]] = {
 
 
 def evaluate_weather_spray_safety(
-    weather_data: Optional[Dict[str, Any]],
-) -> Dict[str, Any]:
+    weather_data: dict[str, Any] | None,
+) -> dict[str, Any]:
     """
     Evaluates ICAR/IRRI weather-based spray safety decision rules using real Open-Meteo telemetry.
     Rules:
@@ -448,8 +448,8 @@ def calculate_agronomic_dosage(
     area_unit: str = "acre",
     sprayer_tank_capacity_l: float = 16.0,
     growth_stage: str = "Tillering",
-    weather_data: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    weather_data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """
     Computes exact ICAR compliant chemical quantities, dilution water, knapsack sprayer tank counts,
     and live weather-based spray feasibility.
@@ -462,7 +462,7 @@ def calculate_agronomic_dosage(
             break
 
     info = AGRONOMIC_KNOWLEDGE.get(disease_key, AGRONOMIC_KNOWLEDGE["Healthy"])
-    
+
     # Convert area to acres
     unit_norm = area_unit.lower().strip()
     multiplier = AREA_CONVERSIONS_TO_ACRES.get(unit_norm, 1.0)
@@ -470,7 +470,7 @@ def calculate_agronomic_dosage(
 
     # Standard water volume: ~200 Liters / Acre (equivalent to 500 L / Hectare)
     water_volume_liters = round(area_acres * 200.0, 1)
-    
+
     # Knapsack sprayer calculations (e.g. 16L standard manual / battery backpack pump)
     tank_capacity = max(5.0, sprayer_tank_capacity_l)
     total_tanks = math.ceil(water_volume_liters / tank_capacity)
@@ -478,7 +478,7 @@ def calculate_agronomic_dosage(
     primary_chem = info.get("primary_chemical", {})
     dose_per_l = primary_chem.get("dose_per_liter", 0.0)
     chem_unit = primary_chem.get("unit", "g")
-    
+
     total_chemical_qty = round(dose_per_l * water_volume_liters, 2)
     per_tank_chemical_qty = round(dose_per_l * tank_capacity, 2)
 
@@ -523,7 +523,7 @@ def consult_agronomist(disease_type: str, severity: float, question: str) -> str
     Generate evidence-backed ICAR/IRRI agronomic consultation response.
     """
     q_lower = question.lower()
-    
+
     # Normalize disease key
     disease_key = "Healthy"
     for k in AGRONOMIC_KNOWLEDGE:
@@ -533,7 +533,7 @@ def consult_agronomist(disease_type: str, severity: float, question: str) -> str
 
     info = AGRONOMIC_KNOWLEDGE.get(disease_key, AGRONOMIC_KNOWLEDGE["Healthy"])
     sev_str = f"Estimated severity is currently **{severity:.1f}%**"
-    
+
     # Match query intent
     if any(w in q_lower for w in ["chemical", "spray", "fungicide", "medicine", "drug", "dose", "dosage", "active ingredient"]):
         return (

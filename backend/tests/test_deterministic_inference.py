@@ -19,8 +19,8 @@ import torch
 @pytest.fixture
 def inference_service():
     """Create an InferenceService with loaded model weights."""
-    from app.services.inference_service import InferenceService
     from app.core.config import settings
+    from app.services.inference_service import InferenceService
 
     model_paths = settings.get_model_paths()
     svc = InferenceService(model_paths=model_paths if model_paths else None)

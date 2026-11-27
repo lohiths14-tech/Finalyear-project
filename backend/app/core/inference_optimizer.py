@@ -16,9 +16,9 @@ Features:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import gc
-from typing import Callable, Optional
 
 import numpy as np
 import torch
@@ -31,7 +31,7 @@ class InferenceConfig:
     """Tunable inference configuration."""
 
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
-    compile_mode: Optional[str] = (
+    compile_mode: str | None = (
         "default"  # "default" | "reduce-overhead" | "max-autotune" | None
     )
     use_amp: bool = True  # Automatic Mixed Precision
@@ -60,11 +60,11 @@ class CompiledModel(nn.Module):
         super().__init__()
         self.model = model
         self.config = config
-        self.compiled: Optional[Callable] = None
-        self.compiled_torchscript: Optional[torch.jit.ScriptModule] = None
+        self.compiled: Callable | None = None
+        self.compiled_torchscript: torch.jit.ScriptModule | None = None
         self._is_compiled = False
 
-    def compile(self) -> "CompiledModel":
+    def compile(self) -> CompiledModel:
         """Attempt torch.compile first, then TorchScript fallback."""
         if hasattr(torch, "compile"):
             try:
@@ -105,11 +105,11 @@ class GradCAM:
     Works with any model that exposes features before the final classifier.
     """  # noqa: E501
 
-    def __init__(self, model: nn.Module, target_layer: Optional[str] = None):
+    def __init__(self, model: nn.Module, target_layer: str | None = None):
         self.model = model
         self.target_layer_name = target_layer
-        self.gradients: Optional[torch.Tensor] = None
-        self.activations: Optional[torch.Tensor] = None
+        self.gradients: torch.Tensor | None = None
+        self.activations: torch.Tensor | None = None
         self._hook_handles: list = []
         self._register_hooks()
 
@@ -149,8 +149,8 @@ class GradCAM:
     def generate(
         self,
         input_tensor: torch.Tensor,
-        class_idx: Optional[int] = None,
-        interpolate_to: Optional[tuple[int, int]] = None,
+        class_idx: int | None = None,
+        interpolate_to: tuple[int, int] | None = None,
     ) -> np.ndarray:
         """
         Generate GradCAM heatmap for the predicted (or specified) class.
@@ -217,7 +217,7 @@ class GradCAM:
         self,
         image: np.ndarray,
         input_tensor: torch.Tensor,
-        class_idx: Optional[int] = None,
+        class_idx: int | None = None,
         alpha: float = 0.4,
         colormap: int = 2,  # cv2.COLORMAP_JET
     ) -> np.ndarray:
@@ -257,7 +257,7 @@ class DynamicEnsemble:
         self.models = models
         self.model_names = model_names
         self.device = device
-        self.gating_network: Optional[nn.Module] = None
+        self.gating_network: nn.Module | None = None
         self._setup_gating_network(len(models))
 
     def _setup_gating_network(self, num_models: int):
@@ -347,7 +347,7 @@ class InferenceOptimizer:
       result = optimizer.run(input_tensor)
     """
 
-    def __init__(self, config: Optional[InferenceConfig] = None):
+    def __init__(self, config: InferenceConfig | None = None):
         self.config = config or InferenceConfig()
         self.device = self.config.device
         self.compiled_models: dict[str, CompiledModel] = {}
@@ -362,16 +362,16 @@ class InferenceOptimizer:
 
     def register_model(
         self, name: str, model: nn.Module
-    ) -> "InferenceOptimizer":
+    ) -> InferenceOptimizer:
         """Register and wrap a model for optimized inference."""
         model.eval()
         compiled = CompiledModel(model, self.config)
         self.compiled_models[name] = compiled
         return self
 
-    def compile(self) -> "InferenceOptimizer":
+    def compile(self) -> InferenceOptimizer:
         """Compile all registered models."""
-        for name, compiled in self.compiled_models.items():
+        for _name, compiled in self.compiled_models.items():
             compiled.compile()
             self.is_compiled = self.is_compiled or compiled._is_compiled
         return self
@@ -382,7 +382,7 @@ class InferenceOptimizer:
         """Run dummy inference passes to warm up cuDNN / batch-norm layers."""
         for _ in range(num_batches):
             dummy = dummy_input_fn()
-            for name, compiled in self.compiled_models.items():
+            for _name, compiled in self.compiled_models.items():
                 try:
                     with torch.no_grad():
                         if self.config.use_amp and self.device == "cuda":
@@ -420,7 +420,7 @@ class InferenceOptimizer:
         return results
 
     def get_gradcam(
-        self, model_name: str, target_layer: Optional[str] = None
+        self, model_name: str, target_layer: str | None = None
     ) -> GradCAM:
         """Get or create a GradCAM instance for a registered model."""
         if model_name not in self.gradcam_instances:
@@ -439,7 +439,7 @@ def dynamic_batch_inference(
     model: nn.Module,
     tensors: list[torch.Tensor],
     config: InferenceConfig,
-    preprocess_fn: Optional[Callable] = None,
+    preprocess_fn: Callable | None = None,
 ) -> list[torch.Tensor]:
     """
     Dynamically accumulates tensors into batches to maximize GPU throughput.

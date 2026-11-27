@@ -4,20 +4,28 @@ Enables multi-tenant, non-blocking cloud worker execution for heavy field drone 
 """
 
 import asyncio
-import base64
+from datetime import UTC, datetime
 import time
+from typing import Any
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
+
 import cv2
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    UploadFile,
+)
 import numpy as np
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/jobs", tags=["Async Job Queue"])
 
 # In-memory fast job store (synchronized across requests)
-JOB_REGISTRY: Dict[str, Dict[str, Any]] = {}
+JOB_REGISTRY: dict[str, dict[str, Any]] = {}
 MAX_JOB_HISTORY = 100
 
 
@@ -26,12 +34,12 @@ class JobStatusResponse(BaseModel):
     status: str  # queued, processing, completed, failed
     scan_type: str  # field, leaf
     created_at: str
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
-    duration_ms: Optional[float] = None
+    started_at: str | None = None
+    completed_at: str | None = None
+    duration_ms: float | None = None
     progress_pct: int = 0
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
 
 
 def _clean_old_jobs():
@@ -52,7 +60,7 @@ async def _execute_async_inference(job_id: str, image_bytes: bytes, scan_type: s
 
     job["status"] = "processing"
     job["progress_pct"] = 25
-    job["started_at"] = datetime.now(timezone.utc).isoformat()
+    job["started_at"] = datetime.now(UTC).isoformat()
     t0 = time.perf_counter()
 
     try:
@@ -77,7 +85,7 @@ async def _execute_async_inference(job_id: str, image_bytes: bytes, scan_type: s
 
         job["progress_pct"] = 100
         job["status"] = "completed"
-        job["completed_at"] = datetime.now(timezone.utc).isoformat()
+        job["completed_at"] = datetime.now(UTC).isoformat()
         job["duration_ms"] = round((time.perf_counter() - t0) * 1000, 2)
         job["result"] = result
 
@@ -85,7 +93,7 @@ async def _execute_async_inference(job_id: str, image_bytes: bytes, scan_type: s
         job["status"] = "failed"
         job["progress_pct"] = 100
         job["error"] = str(e)
-        job["completed_at"] = datetime.now(timezone.utc).isoformat()
+        job["completed_at"] = datetime.now(UTC).isoformat()
         job["duration_ms"] = round((time.perf_counter() - t0) * 1000, 2)
 
 
@@ -107,7 +115,7 @@ async def submit_async_job(
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
     job_id = f"job-{uuid.uuid4().hex[:12]}"
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
 
     JOB_REGISTRY[job_id] = {
         "job_id": job_id,
@@ -142,7 +150,7 @@ async def get_job_status(job_id: str):
     return job
 
 
-@router.get("", response_model=List[JobStatusResponse])
+@router.get("", response_model=list[JobStatusResponse])
 async def list_jobs():
     """
     List all tracked background jobs in reverse chronological order.

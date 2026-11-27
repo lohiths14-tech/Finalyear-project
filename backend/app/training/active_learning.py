@@ -14,9 +14,8 @@ Components:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import threading
-from typing import Optional
 
 import numpy as np
 
@@ -32,13 +31,13 @@ class SampleCandidate:
     tile_id: int
     entropy: float
     margin: float  # difference between top-2 class probabilities
-    feature_vector: Optional[np.ndarray] = None
-    pseudo_label: Optional[int] = None
+    feature_vector: np.ndarray | None = None
+    pseudo_label: int | None = None
     pseudo_confidence: float = 0.0
     selected: bool = False
     labeled: bool = False
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
     @property
@@ -57,7 +56,7 @@ class LabeledSample:
     source: str  # "human" | "pseudo"
     image_id: str
     timestamp: str = field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 
@@ -334,7 +333,7 @@ class ActiveLearningLoop:
         logits: np.ndarray,
         image_id: str,
         tile_id: int,
-        feature_vector: Optional[np.ndarray] = None,
+        feature_vector: np.ndarray | None = None,
     ):
         """Record an inference result as a candidate for active learning."""
         entropy, margin, max_prob = self.selector.compute_uncertainty(
@@ -472,7 +471,7 @@ def create_labeling_task(
         "samples": samples,
         "priority": priority,
         "model_version": "current",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "callback_url": "/api/v1/active-learning/feedback",
     }
 

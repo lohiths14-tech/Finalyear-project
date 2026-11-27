@@ -22,7 +22,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 import random
-from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -43,9 +42,9 @@ class AugmentationConfig:
     """Probability and intensity bounds for each augmentation type."""
 
     blur_prob: float = 0.4
-    blur_strength_range: Tuple[float, float] = (1.5, 4.0)
+    blur_strength_range: tuple[float, float] = (1.5, 4.0)
     occlusion_prob: float = 0.3
-    occlusion_area_range: Tuple[float, float] = (0.05, 0.25)
+    occlusion_area_range: tuple[float, float] = (0.05, 0.25)
     illumination_prob: float = 0.5
     illumination_strength: float = 0.3
     perspective_prob: float = 0.25
@@ -61,7 +60,7 @@ class Augmenter:
     """Base augmenter interface."""
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         raise NotImplementedError
 
@@ -84,7 +83,7 @@ class FieldConditionAugmenter(Augmenter):
         self.intensity = intensity
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -158,13 +157,13 @@ class MotionBlurAugmenter(Augmenter):
     """
 
     def __init__(
-        self, kernel_range: Tuple[int, int] = (5, 15), prob: float = 0.5
+        self, kernel_range: tuple[int, int] = (5, 15), prob: float = 0.5
     ):
         self.kernel_range = kernel_range
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -199,13 +198,13 @@ class DefocusBlurAugmenter(Augmenter):
     """  # noqa: E501
 
     def __init__(
-        self, radius_range: Tuple[int, int] = (3, 12), prob: float = 0.4
+        self, radius_range: tuple[int, int] = (3, 12), prob: float = 0.4
     ):
         self.radius_range = radius_range
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -226,13 +225,13 @@ class LensAberrationAugmenter(Augmenter):
     """
 
     def __init__(
-        self, offset_range: Tuple[int, int] = (2, 6), prob: float = 0.3
+        self, offset_range: tuple[int, int] = (2, 6), prob: float = 0.3
     ):
         self.offset_range = offset_range
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -277,7 +276,7 @@ class LeafOcclusionAugmenter(Augmenter):
         self.max_occlusions = max_occlusions
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -315,7 +314,7 @@ class SoilPatchAugmenter(Augmenter):
         self.max_patches = max_patches
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -362,7 +361,7 @@ class SunGlareAugmenter(Augmenter):
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -401,7 +400,7 @@ class UnevenIlluminationAugmenter(Augmenter):
         self.strength = strength
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -440,7 +439,7 @@ class PerspectiveAugmenter(Augmenter):
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -493,7 +492,7 @@ class GeometricAugmenter(Augmenter):
     def __init__(
         self,
         max_rotation: float = 15.0,
-        scale_range: Tuple[float, float] = (0.8, 1.2),
+        scale_range: tuple[float, float] = (0.8, 1.2),
         prob: float = 0.3,
     ):
         self.max_rotation = max_rotation
@@ -501,7 +500,7 @@ class GeometricAugmenter(Augmenter):
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -531,7 +530,7 @@ class ColorShiftAugmenter(Augmenter):
         self.prob = prob
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -605,7 +604,7 @@ class AlbumentationsWrapper(Augmenter):
         )
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if self.transform is None:
             return image
@@ -620,9 +619,9 @@ class CompositeAugmenter:
     Randomly chains multiple augmenters with configurable probabilities.
     """
 
-    def __init__(self, config: Optional[AugmentationConfig] = None):
+    def __init__(self, config: AugmentationConfig | None = None):
         self.config = config or AugmentationConfig()
-        self.augmenters: list[Tuple[Augmenter, float]] = [
+        self.augmenters: list[tuple[Augmenter, float]] = [
             (MotionBlurAugmenter(prob=0.6), self.config.blur_prob),
             (DefocusBlurAugmenter(prob=0.5), self.config.blur_prob * 0.8),
             (LensAberrationAugmenter(prob=0.4), self.config.blur_prob * 0.5),
@@ -644,7 +643,7 @@ class CompositeAugmenter:
         ]
 
     def __call__(
-        self, image: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, image: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()
@@ -679,7 +678,7 @@ class NGVCNoiseAugmenter:
         self.smoothing_prob = smoothing_prob
 
     def __call__(
-        self, ngvc: np.ndarray, rng: Optional[np.random.Generator] = None
+        self, ngvc: np.ndarray, rng: np.random.Generator | None = None
     ) -> np.ndarray:
         if rng is None:
             rng = np.random.default_rng()

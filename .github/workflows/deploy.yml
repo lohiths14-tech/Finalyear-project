@@ -53,7 +53,7 @@ jobs:
       - name: Run migrations
         run: alembic upgrade head
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'sqlite+aiosqlite:///./agrivision.db' }}
 
   deploy-frontend:
     name: Deploy Frontend

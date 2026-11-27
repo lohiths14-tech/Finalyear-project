@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import base64
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -73,13 +72,13 @@ class DiseaseHotspot:
 class VisualizationResult:
     """Container for all visualization outputs."""
 
-    ndvi_overlay_base64: Optional[str] = None
-    field_map_base64: Optional[str] = None
-    hotspot_map_base64: Optional[str] = None
-    health_summary: Optional[dict] = None
-    legend: Optional[dict] = None
-    geojson: Optional[dict] = None
-    temporal_chart: Optional[dict] = None
+    ndvi_overlay_base64: str | None = None
+    field_map_base64: str | None = None
+    hotspot_map_base64: str | None = None
+    health_summary: dict | None = None
+    legend: dict | None = None
+    geojson: dict | None = None
+    temporal_chart: dict | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -222,12 +221,12 @@ class FieldMapRenderer:
     @staticmethod
     def render_field_map(
         field_geojson: dict,
-        ndvi_overlay: Optional[np.ndarray] = None,
-        base_map: Optional[np.ndarray] = None,
+        ndvi_overlay: np.ndarray | None = None,
+        base_map: np.ndarray | None = None,
         width: int = 512,
         height: int = 512,
-        stress_zones: Optional[list[dict]] = None,
-        disease_hotspots: Optional[list[DiseaseHotspot]] = None,
+        stress_zones: list[dict] | None = None,
+        disease_hotspots: list[DiseaseHotspot] | None = None,
     ) -> np.ndarray:
         """
         Render field map with optional NDVI overlay, stress zones, and hotspots.
@@ -571,13 +570,13 @@ class SatelliteOverlayComposer:
 
     @staticmethod
     def compose(
-        field_geojson: Optional[dict] = None,
-        ndvi_grid: Optional[np.ndarray] = None,
-        ndvi_metadata: Optional[dict] = None,
-        health_zones: Optional[dict] = None,
-        stress_zones: Optional[list[dict]] = None,
-        disease_hotspots: Optional[list[DiseaseHotspot]] = None,
-        temporal_data: Optional[dict] = None,
+        field_geojson: dict | None = None,
+        ndvi_grid: np.ndarray | None = None,
+        ndvi_metadata: dict | None = None,
+        health_zones: dict | None = None,
+        stress_zones: list[dict] | None = None,
+        disease_hotspots: list[DiseaseHotspot] | None = None,
+        temporal_data: dict | None = None,
         width: int = 512,
         height: int = 512,
     ) -> VisualizationResult:

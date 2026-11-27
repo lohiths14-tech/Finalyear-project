@@ -12,9 +12,8 @@ All methods follow graceful degradation:
 Never returns fabricated values.
 """
 
-import calendar
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
 
@@ -50,7 +49,7 @@ class ExternalAPIService:
     # ────────────────────────────────────────────────────────────────────────
     async def get_weather(
         self, lat: float, lon: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetch real-time weather and agro-meteorological data from Open-Meteo.
         Returns temperature, humidity, rainfall, wind speed, soil temp,
@@ -155,7 +154,7 @@ class ExternalAPIService:
         except httpx.HTTPStatusError as e:
             logger.warning("Open-Meteo HTTP error %s for lat=%s lon=%s", e.response.status_code, lat, lon)
             return {"available": False, "reason": f"Weather service returned HTTP {e.response.status_code}."}
-        except Exception as e:
+        except Exception:
             logger.exception("Unexpected error fetching weather for lat=%s lon=%s", lat, lon)
             return {"available": False, "reason": "Weather data unavailable."}
 
@@ -164,7 +163,7 @@ class ExternalAPIService:
     # ────────────────────────────────────────────────────────────────────────
     async def get_location_name(
         self, lat: float, lon: float
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Reverse geocode GPS coordinates to Indian district, state, and country
         using Nominatim (OpenStreetMap). No API key required.
@@ -238,7 +237,7 @@ class ExternalAPIService:
         lat: float,
         lon: float,
         radius_km: int = 50,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Query GBIF for occurrence records of key Indian crop disease pathogens
         and pests within `radius_km` km of the given coordinates.
@@ -259,8 +258,7 @@ class ExternalAPIService:
             "Scirpophaga incertulas": "Yellow Stem Borer",
         }
 
-        results: Dict[str, Any] = {}
-        radius_m = radius_km * 1000
+        results: dict[str, Any] = {}
 
         async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
             for species, label in PATHOGENS.items():
@@ -319,13 +317,13 @@ class ExternalAPIService:
         self,
         query: str = "crop disease India agriculture",
         max_articles: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Fetch real agriculture/disease news articles from GNews API.
         Requires GNEWS_API_KEY in .env. Free tier: 100 requests/day.
         Falls back gracefully if key is missing or service is down.
         """
-        api_key: Optional[str] = getattr(settings, "GNEWS_API_KEY", None)
+        api_key: str | None = getattr(settings, "GNEWS_API_KEY", None)
 
         if not api_key:
             return {

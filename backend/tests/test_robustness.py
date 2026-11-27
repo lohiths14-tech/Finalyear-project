@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 # Mocking robust evaluator since we didn't read it in full but know the API shape
 try:

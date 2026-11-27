@@ -2,10 +2,14 @@
 Unit and API integration tests for AgriPulse 2.0 Agronomic Decision Engine & ICAR Dosage Calculator.
 """
 
+from httpx import ASGITransport, AsyncClient
 import pytest
-from httpx import AsyncClient, ASGITransport
+
+from app.core.agronomy_engine import (
+    calculate_agronomic_dosage,
+    consult_agronomist,
+)
 from app.main import app
-from app.core.agronomy_engine import calculate_agronomic_dosage, consult_agronomist, AGRONOMIC_KNOWLEDGE
 
 
 def test_agronomy_dosage_calculation_acres():

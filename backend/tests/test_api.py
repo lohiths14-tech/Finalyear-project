@@ -2,9 +2,9 @@
 API integration tests — auth, health, history, leaf/field analysis.
 """
 import io
-import pytest
-from httpx import AsyncClient
 
+from httpx import AsyncClient
+import pytest
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 

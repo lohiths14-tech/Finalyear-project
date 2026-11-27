@@ -264,7 +264,7 @@ async def analyze_field_stream(
         while True:
             try:
                 event_type, payload = await asyncio.wait_for(queue.get(), timeout=120.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 break
 
             yield {
@@ -278,8 +278,10 @@ async def analyze_field_stream(
     return EventSourceResponse(event_generator())
 
 
-from pydantic import BaseModel, Field as PydanticField
-from typing import List, Optional, Dict, Any
+from typing import Any
+
+from pydantic import BaseModel
+from pydantic import Field as PydanticField
 
 
 class FieldConsultRequest(BaseModel):
@@ -288,11 +290,11 @@ class FieldConsultRequest(BaseModel):
     average_severity: float = PydanticField(..., description="Average severity across field (0-100)")
     infection_rate: float = PydanticField(..., description="Infection rate percentage (0-100)")
     spread_risk: str = PydanticField("MODERATE", description="Spatial spread risk")
-    clusters: Optional[List[Dict[str, Any]]] = PydanticField(default_factory=list, description="List of detected spatial clusters")
+    clusters: list[dict[str, Any]] | None = PydanticField(default_factory=list, description="List of detected spatial clusters")
     vegetation_coverage: float = PydanticField(85.0, description="Vegetation coverage percentage")
     land_area: float = PydanticField(1.0, description="Land area in specified unit")
     area_unit: str = PydanticField("acre", description="Unit of land area")
-    history: Optional[List[Dict[str, str]]] = PydanticField(default_factory=list, description="Conversation history")
+    history: list[dict[str, str]] | None = PydanticField(default_factory=list, description="Conversation history")
 
 
 @router.post("/analyze/field/consult")

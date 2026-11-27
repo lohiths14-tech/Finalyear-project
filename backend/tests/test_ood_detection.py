@@ -10,7 +10,6 @@ Validates that:
 
 import numpy as np
 import pytest
-import torch
 
 from app.quality.calibration import OODDetector
 from app.services.inference_service import InferenceService

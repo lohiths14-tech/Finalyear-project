@@ -17,7 +17,7 @@ Components:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import numpy as np
 from scipy.special import logsumexp
@@ -63,7 +63,7 @@ class TemperatureScaler:
         self.temperature = max(0.05, temperature)
 
     def calibrate(
-        self, logits: np.ndarray, temperature: Optional[float] = None
+        self, logits: np.ndarray, temperature: float | None = None
     ) -> np.ndarray:
         T = temperature if temperature is not None else self.temperature
         scaled = logits / T
@@ -111,8 +111,8 @@ class IsotonicCalibrator:
     """  # noqa: E501
 
     def __init__(self):
-        self.mapping: Optional[np.ndarray] = None
-        self.bin_edges: Optional[np.ndarray] = None
+        self.mapping: np.ndarray | None = None
+        self.bin_edges: np.ndarray | None = None
         self.fitted = False
 
     def fit(
@@ -120,7 +120,7 @@ class IsotonicCalibrator:
         raw_probs: np.ndarray,
         labels: np.ndarray,
         num_bins: int = 15,
-    ) -> "IsotonicCalibrator":
+    ) -> IsotonicCalibrator:
         """
         Fit isotonic mapping from raw probabilities to true labels.
         Uses pool-adjacent-violators (PAV) algorithm.
@@ -247,7 +247,7 @@ class ConfidenceCalibrator:
         logits: np.ndarray,
         labels: np.ndarray,
         use_isotonic: bool = True,
-    ) -> "ConfidenceCalibrator":
+    ) -> ConfidenceCalibrator:
         """Fit calibration parameters from held-out calibration set."""
         n = len(labels)
         if n < self.min_samples:
@@ -290,7 +290,7 @@ class ConfidenceCalibrator:
         spectral_net,
         num_classes: int = 5,
         num_samples: int = 300,
-    ) -> "ConfidenceCalibrator":
+    ) -> ConfidenceCalibrator:
         """
         Self-calibrate using synthetic NGVC samples run through the spectral network.
 
@@ -545,7 +545,7 @@ class OODDetector:
         self.cov_inv = np.linalg.pinv(cov + np.eye(cov.shape[0]) * 1e-6)
 
     def score(
-        self, logits: np.ndarray, features: Optional[np.ndarray] = None
+        self, logits: np.ndarray, features: np.ndarray | None = None
     ) -> float:
         """Compute OOD score — higher = more OOD-like."""
         if self.method == "msp":
@@ -592,7 +592,7 @@ class OODDetector:
         return float(np.min(distances)) if distances else 0.0
 
     def is_ood(
-        self, logits: np.ndarray, features: Optional[np.ndarray] = None
+        self, logits: np.ndarray, features: np.ndarray | None = None
     ) -> tuple[bool, float, str]:
         """Returns (is_ood, ood_score, reason)."""
         score = self.score(logits, features)
@@ -657,7 +657,7 @@ class PredictionStabilizer:
         self._logit_buffer: list[np.ndarray] = []
         self._history: list[dict] = []
 
-    def add_scan(self, logits: np.ndarray, metadata: Optional[dict] = None):
+    def add_scan(self, logits: np.ndarray, metadata: dict | None = None):
         """Add a new scan to the buffer."""
         self._logit_buffer.append(logits.copy())
         self._history.append(metadata or {})
@@ -665,7 +665,7 @@ class PredictionStabilizer:
     def get_stabilized(
         self,
         return_variance: bool = False,
-    ) -> tuple[np.ndarray, Optional[float]]:
+    ) -> tuple[np.ndarray, float | None]:
         """
         Returns (stabilized_probs, variance_if_requested).
         Variance is the per-class variance across scans — low variance = stable.
@@ -716,7 +716,7 @@ class ReliabilityScore:
     calibration_factor: float  # from confidence calibration
     ood_factor: float  # from OOD detection (1 = in-distribution)
     stability_factor: float  # from prediction stabilizer (1 = stable)
-    rejection_reason: Optional[str]  # None if reliable
+    rejection_reason: str | None  # None if reliable
 
 
 class ReliabilityScorer:
@@ -748,7 +748,7 @@ class ReliabilityScorer:
         calibrated_confidence: float,
         quality_iqi: float,
         ood_score: float,  # 0 = OOD, 1 = in-distribution
-        prediction_variance: Optional[float] = None,
+        prediction_variance: float | None = None,
     ) -> ReliabilityScore:
         """Compute combined reliability score with rejection reasons."""
         reasons: list[str] = []

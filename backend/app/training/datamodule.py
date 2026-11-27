@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 import numpy as np
 from torch.utils.data import DataLoader, Subset
@@ -16,7 +15,7 @@ class AgriPulseDataModule:
     and DataLoader creation.
     """
 
-    def __init__(self, data_dirs: Dict[str, str], config: TrainingConfig):
+    def __init__(self, data_dirs: dict[str, str], config: TrainingConfig):
         self.data_dirs = data_dirs
         self.config = config
 

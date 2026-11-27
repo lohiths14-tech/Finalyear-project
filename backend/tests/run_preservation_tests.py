@@ -12,20 +12,21 @@ import subprocess
 import sys
 import time
 
+
 def run_test_class(class_name, timeout=60):
     """Run a specific test class with timeout"""
     print(f"\n🧪 Testing {class_name}")
     print("="*50)
-    
+
     cmd = [
-        "python", "-m", "pytest", 
+        "python", "-m", "pytest",
         f"test_preservation_properties.py::{class_name}",
         "-v", "--tb=short", "-x"
     ]
-    
+
     try:
         result = subprocess.run(cmd, timeout=timeout, capture_output=True, text=True)
-        
+
         if result.returncode == 0:
             print(f"✅ {class_name}: PASSED")
             return True
@@ -34,7 +35,7 @@ def run_test_class(class_name, timeout=60):
             print(f"STDOUT: {result.stdout}")
             print(f"STDERR: {result.stderr}")
             return False
-            
+
     except subprocess.TimeoutExpired:
         print(f"⏰ {class_name}: TIMEOUT ({timeout}s)")
         return False
@@ -48,32 +49,32 @@ def main():
     print("Purpose: Establish baseline behavior before code quality fixes")
     print("Expected: All tests PASS (confirms functionality to preserve)")
     print("=" * 60)
-    
+
     # Test classes to run (ordered by complexity/speed)
     test_classes = [
         ("TestMLModelPreservation", 30),          # Just decision engine, not full model
         ("TestGeospatialPreservation", 60),       # GPS coordinate tests
-        ("TestDatabaseOperationPreservation", 45), # Database model tests  
+        ("TestDatabaseOperationPreservation", 45), # Database model tests
         ("TestTrainingPipelinePreservation", 45), # Training config tests
     ]
-    
+
     passed = 0
     total = len(test_classes)
-    
+
     start_time = time.time()
-    
+
     for class_name, timeout in test_classes:
         if run_test_class(class_name, timeout):
             passed += 1
-        
+
     end_time = time.time()
     duration = end_time - start_time
-    
+
     print("\n" + "="*60)
-    print(f"📊 PRESERVATION TEST RESULTS")
+    print("📊 PRESERVATION TEST RESULTS")
     print(f"Passed: {passed}/{total}")
     print(f"Duration: {duration:.1f}s")
-    
+
     if passed == total:
         print("✅ ALL PRESERVATION TESTS PASSED")
         print("✨ Baseline behavior successfully captured!")

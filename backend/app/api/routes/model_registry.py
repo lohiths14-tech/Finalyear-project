@@ -3,10 +3,12 @@ AgriPulse 2.0 — MLOps Model Registry & Cryptographic Lineage API
 Exposes verifiable model provenance, SHA-256 weight checksums, training dataset versions, and calibration metrics.
 """
 
-import os
 import hashlib
-from typing import Dict, Any, List
+import os
+from typing import Any
+
 from fastapi import APIRouter
+
 from ...core.config import settings
 
 router = APIRouter(prefix="/model-registry", tags=["MLOps & Model Registry"])
@@ -24,7 +26,7 @@ def _calculate_sha256(filepath: str) -> str:
 
 
 @router.get("/manifest")
-async def get_model_manifest() -> Dict[str, Any]:
+async def get_model_manifest() -> dict[str, Any]:
     """
     Returns full cryptographic provenance, ablation performance benchmarks, and calibration parameters.
     """

@@ -1,6 +1,5 @@
 import hashlib
 import logging
-from typing import List, Optional, Set
 
 from PIL import Image
 
@@ -14,11 +13,11 @@ class DataCleaner:
     """  # noqa: E501
 
     def __init__(
-        self, target_classes: List[str], allow_pseudo_severity: bool = False
+        self, target_classes: list[str], allow_pseudo_severity: bool = False
     ):
         self.target_classes = target_classes
         self.allow_pseudo_severity = allow_pseudo_severity
-        self._seen_hashes: Set[str] = set()
+        self._seen_hashes: set[str] = set()
 
         # Simple disease mappings from common datasets (PlantVillage,
         # PaddyDoctor, PlantDoc)
@@ -103,7 +102,7 @@ class DataCleaner:
         self._seen_hashes.add(img_hash)
         return False
 
-    def estimate_severity(self, raw_label: str) -> Optional[float]:
+    def estimate_severity(self, raw_label: str) -> float | None:
         """
         Heuristic to generate pseudo-severity based on class names from public datasets
         that don't provide continuous severity values. Returns None if disabled.

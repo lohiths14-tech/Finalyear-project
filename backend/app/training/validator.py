@@ -1,5 +1,4 @@
 import logging
-from typing import Dict
 
 import torch
 from torch.utils.data import DataLoader
@@ -24,7 +23,7 @@ class Validator:
         self.tracker = MetricTracker()
 
     @torch.no_grad()
-    def validate(self, dataloader: DataLoader) -> Dict[str, float]:
+    def validate(self, dataloader: DataLoader) -> dict[str, float]:
         self.model.eval()
         self.tracker.reset()
 

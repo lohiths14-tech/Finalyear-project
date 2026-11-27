@@ -3,12 +3,13 @@ Tests for AgriPulse 2.0 Asynchronous Job Queue & Polling Engine.
 """
 
 import io
-import pytest
-from httpx import AsyncClient, ASGITransport
-import numpy as np
+
 import cv2
+from httpx import ASGITransport, AsyncClient
+import numpy as np
+import pytest
+
 from app.main import app
-from app.api.routes.jobs import JOB_REGISTRY
 
 
 @pytest.fixture

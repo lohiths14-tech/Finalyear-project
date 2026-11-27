@@ -3,7 +3,6 @@ Scan history endpoints — powers the Historical Audit tab in the frontend.
 """
 
 import json
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -26,7 +25,7 @@ class ScanSummary(BaseModel):
     disease_type: str
     severity: float
     confidence: float
-    spread_risk: Optional[str]
+    spread_risk: str | None
     treatment: str
     timestamp: str
 
@@ -38,10 +37,10 @@ class ScanDetail(ScanSummary):
 # ── Routes ─────────────────────────────────────────────────────────────────
 
 
-@router.get("/history", response_model=List[ScanSummary])
+@router.get("/history", response_model=list[ScanSummary])
 async def list_scans(
     limit: int = Query(50, ge=1, le=200),
-    scan_type: Optional[str] = Query(None, pattern="^(field|leaf)$"),
+    scan_type: str | None = Query(None, pattern="^(field|leaf)$"),
     db: AsyncSession = Depends(get_db),
 ):
     """Return recent scans, newest first."""

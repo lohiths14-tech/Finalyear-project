@@ -3,8 +3,7 @@ Tests for AgriPulse 2.0 Aleatoric and Epistemic Uncertainty Decomposition.
 """
 
 import numpy as np
-import pytest
-import torch
+
 from app.services.inference_service import InferenceService
 
 

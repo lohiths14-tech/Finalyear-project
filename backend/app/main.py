@@ -4,7 +4,6 @@ from functools import partial
 import hmac
 import os
 import uuid
-import torch
 
 from fastapi import FastAPI, HTTPException, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,22 +13,22 @@ from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
-
 from sqlalchemy import text as sa_text
+import torch
 
+from .api.routes.agronomy import router as agronomy_router
+from .api.routes.auth import router as auth_router
+from .api.routes.environment import router as environment_router
+from .api.routes.field import router as field_router
+from .api.routes.history import router as history_router
+from .api.routes.jobs import router as jobs_router
+from .api.routes.leaf import router as leaf_router
+from .api.routes.model_registry import router as model_registry_router
 from .core.config import settings
 from .core.limiter import limiter
 from .core.logger import logger
 from .db.database import engine, init_db
 from .services.inference_service import InferenceService
-from .api.routes.field import router as field_router
-from .api.routes.history import router as history_router
-from .api.routes.leaf import router as leaf_router
-from .api.routes.auth import router as auth_router
-from .api.routes.environment import router as environment_router
-from .api.routes.jobs import router as jobs_router
-from .api.routes.agronomy import router as agronomy_router
-from .api.routes.model_registry import router as model_registry_router
 
 # Rate limiter moved to .core.limiter to avoid circular imports
 
@@ -277,8 +276,8 @@ async def readiness_probe():
     """Kubernetes Readiness probe: validates database and inference engine readiness."""
     db_ok = False
     try:
-        import sqlite3
         from pathlib import Path
+        import sqlite3
         candidate_paths = [
             Path("backend/data/agrivision.db"),
             Path("data/agrivision.db"),

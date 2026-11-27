@@ -1,17 +1,20 @@
 """
 Pytest fixtures — async engine, test client, sample image.
 """
-import asyncio
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
+import os
+import sys
 
+from httpx import ASGITransport, AsyncClient
 import numpy as np
 import pytest
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
-import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 os.environ["DB_DIR"] = ":memory:"
 

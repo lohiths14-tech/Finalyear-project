@@ -1,8 +1,9 @@
-import pytest
-import numpy as np
 import cv2
-from app.utils.image_processing import AgriImageProcessor
+import numpy as np
+import pytest
+
 from app.services.inference_service import InferenceService
+from app.utils.image_processing import AgriImageProcessor
 
 
 # ---------------------------------------------------------------------------

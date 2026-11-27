@@ -8,9 +8,8 @@ Endpoints:
   GET /api/v1/environment/news     — Indian agriculture disease news
 """
 
-from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Query, Request
 
 from ...core.limiter import limiter
 from ...core.logger import logger
@@ -27,13 +26,13 @@ DEFAULT_LON = 75.5681
 @limiter.limit("30/minute")
 async def get_environment_data(
     request: Request,
-    lat: Optional[float] = Query(
+    lat: float | None = Query(
         default=None,
         description="Field latitude. Falls back to Shivamogga, Karnataka if not provided.",
         ge=-90.0,
         le=90.0,
     ),
-    lon: Optional[float] = Query(
+    lon: float | None = Query(
         default=None,
         description="Field longitude. Falls back to Shivamogga, Karnataka if not provided.",
         ge=-180.0,

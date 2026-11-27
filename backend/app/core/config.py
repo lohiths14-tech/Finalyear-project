@@ -1,20 +1,18 @@
-import os
-import secrets
 from pathlib import Path
-from typing import Dict, List, Optional
-import torch
+import secrets
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import torch
 
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AgriVision AI"
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api/v1"
-    DATABASE_URL: Optional[str] = None
+    DATABASE_URL: str | None = None
 
     # CORS — comma-separated in env:
-    BACKEND_CORS_ORIGINS: List[str] = [
+    BACKEND_CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
@@ -24,17 +22,17 @@ class Settings(BaseSettings):
     ]
 
     # API Key authentication (leave empty to disable)
-    API_KEY: Optional[str] = None
+    API_KEY: str | None = None
 
     # ── External Public APIs ────────────────────────────────────────────────
     # GNews — Free Indian agriculture news (get key at https://gnews.io)
-    GNEWS_API_KEY: Optional[str] = None
+    GNEWS_API_KEY: str | None = None
     # Open-Meteo base URL (free, no key required)
     OPEN_METEO_BASE_URL: str = "https://api.open-meteo.com/v1/forecast"
 
     # ── Grounded Agronomic LLM APIs (Optional) ──────────────────────────────
-    GEMINI_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: str | None = None
+    OPENAI_API_KEY: str | None = None
 
     # File upload limits (20MB maximum)
     MAX_FILE_SIZE_MB: int = 20
@@ -55,7 +53,7 @@ class Settings(BaseSettings):
     LOG_DIR: str = "./logs"
     LOG_LEVEL: str = "INFO"
 
-    thresholds: Dict[str, Dict[str, float]] = {
+    thresholds: dict[str, dict[str, float]] = {
         "quality": {
             "blur_min": 0.4,
             "brightness_min": 0.3,
@@ -95,7 +93,7 @@ class Settings(BaseSettings):
                 return c.resolve()
         return Path(self.MODEL_BASE_PATH).resolve()
 
-    def get_model_paths(self) -> Optional[Dict[str, str]]:
+    def get_model_paths(self) -> dict[str, str] | None:
         """Return resolved model weight paths if .pt files exist, else None."""
         base = self.resolve_model_base_dir()
         paths = {

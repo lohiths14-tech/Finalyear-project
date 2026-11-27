@@ -23,7 +23,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import Optional
 
 import numpy as np
 
@@ -36,14 +35,14 @@ class GPSCoordinate:
 
     latitude: float
     longitude: float
-    altitude_m: Optional[float] = None
-    accuracy_m: Optional[float] = None
-    timestamp: Optional[str] = None
+    altitude_m: float | None = None
+    accuracy_m: float | None = None
+    timestamp: str | None = None
 
     def is_valid(self) -> bool:
         return -90 <= self.latitude <= 90 and -180 <= self.longitude <= 180
 
-    def distance_to(self, other: "GPSCoordinate") -> float:
+    def distance_to(self, other: GPSCoordinate) -> float:
         """Haversine distance in meters between two GPS points."""
         return haversine_distance(
             self.latitude,
@@ -68,9 +67,9 @@ class FieldGeometry:
     """A field boundary defined by GPS coordinates."""
 
     boundary: list[GPSCoordinate]
-    name: Optional[str] = None
-    crop_type: Optional[str] = None
-    planting_date: Optional[str] = None
+    name: str | None = None
+    crop_type: str | None = None
+    planting_date: str | None = None
 
     @property
     def centroid(self) -> GPSCoordinate:
@@ -146,8 +145,8 @@ class FieldGeometry:
         min_lon: float,
         max_lat: float,
         max_lon: float,
-        name: Optional[str] = None,
-    ) -> "FieldGeometry":
+        name: str | None = None,
+    ) -> FieldGeometry:
         """Create a rectangular field from bounding box coordinates."""
         corners = [
             GPSCoordinate(min_lat, min_lon),
@@ -160,7 +159,7 @@ class FieldGeometry:
     @classmethod
     def from_csv(
         cls, rows: list[dict], lat_col: str = "lat", lon_col: str = "lon"
-    ) -> "FieldGeometry":
+    ) -> FieldGeometry:
         """Create field from CSV rows containing lat/lon columns."""
         coords = [
             GPSCoordinate(
@@ -289,7 +288,7 @@ class NDVICloudProvider:
     NDVI overlays are purely informational for large-field visualization.
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self.api_key = api_key
         self._cache: dict[str, NDVIBand] = {}
         self._available = False
@@ -299,9 +298,9 @@ class NDVICloudProvider:
         lat: float,
         lon: float,
         radius_m: float = 100,
-        date: Optional[str] = None,
+        date: str | None = None,
         use_cache: bool = True,
-    ) -> Optional[NDVIBand]:
+    ) -> NDVIBand | None:
         """
         Get NDVI value at a coordinate.
         Returns None if no data source is available.
@@ -322,7 +321,7 @@ class NDVICloudProvider:
         self,
         geometry: FieldGeometry,
         resolution_m: float = 30,
-        date: Optional[str] = None,
+        date: str | None = None,
     ) -> tuple[np.ndarray, dict]:
         """
         Generate an NDVI grid over the field area.
@@ -387,8 +386,8 @@ class NDVICloudProvider:
         lat: float,
         lon: float,
         radius_m: float,
-        date: Optional[str],
-    ) -> Optional[NDVIBand]:
+        date: str | None,
+    ) -> NDVIBand | None:
         """Attempt to fetch NDVI from satellite API. Returns None on failure."""  # noqa: E501
         # Non-blocking placeholder — real implementation would call
         # Sentinel Hub, Google Earth Engine, or Mapbox Satellite API
@@ -404,14 +403,14 @@ class NDVICloudProvider:
 class GeospatialContext:
     """Enriched geospatial metadata for a field scan."""
 
-    field_geometry: Optional[FieldGeometry] = None
-    ndvi_grid: Optional[np.ndarray] = None
-    ndvi_metadata: Optional[dict] = None
-    ndvi_health_zones: Optional[dict] = None
-    field_center: Optional[GPSCoordinate] = None
-    nearest_weather_station_km: Optional[float] = None
-    elevation_m: Optional[float] = None
-    soil_type: Optional[str] = None
+    field_geometry: FieldGeometry | None = None
+    ndvi_grid: np.ndarray | None = None
+    ndvi_metadata: dict | None = None
+    ndvi_health_zones: dict | None = None
+    field_center: GPSCoordinate | None = None
+    nearest_weather_station_km: float | None = None
+    elevation_m: float | None = None
+    soil_type: str | None = None
     satellite_available: bool = False
     data_source: str = "none"  # "none" | "sentinel2" | "landsat"
 
@@ -451,19 +450,19 @@ class GeospatialContextBuilder:
     This is purely enhancement — the core pipeline works without it.
     """
 
-    def __init__(self, ndvi_provider: Optional[NDVICloudProvider] = None):
+    def __init__(self, ndvi_provider: NDVICloudProvider | None = None):
         self.ndvi_provider = ndvi_provider or NDVICloudProvider()
 
     def build(
         self,
-        boundary_coords: Optional[list[GPSCoordinate]] = None,
-        center_lat: Optional[float] = None,
-        center_lon: Optional[float] = None,
-        crop_type: Optional[str] = None,
-        field_name: Optional[str] = None,
+        boundary_coords: list[GPSCoordinate] | None = None,
+        center_lat: float | None = None,
+        center_lon: float | None = None,
+        crop_type: str | None = None,
+        field_name: str | None = None,
         enable_ndvi: bool = True,
         ndvi_resolution_m: float = 30,
-        date: Optional[str] = None,
+        date: str | None = None,
     ) -> GeospatialContext:
         """
         Build geospatial context from optional inputs.

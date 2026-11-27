@@ -1,4 +1,3 @@
-from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -42,7 +41,7 @@ class AgriPulseTrainingWrapper(nn.Module):
 
     def forward(
         self, x: torch.Tensor, is_cached: bool = False
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # If using cached dataset, x is already the 64-dim feature vector
         if is_cached:
             vis_features = x

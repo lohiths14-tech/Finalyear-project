@@ -18,7 +18,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import threading
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import cv2
 import numpy as np
@@ -325,7 +325,7 @@ class AerialSegmentationProcessor:
         self,
         image: np.ndarray,
         overlap_ratio: float = 0.25,
-        tile_size: Optional[int] = None,
+        tile_size: int | None = None,
         min_veg_ratio: float = 0.15,
     ):
         self.image = image
@@ -377,7 +377,7 @@ class AerialSegmentationProcessor:
         confidence: float,
         severity: float,
         disease_idx: int = 0,
-        ngvc: Optional[np.ndarray] = None,
+        ngvc: np.ndarray | None = None,
         process_ms: float = 0.0,
     ):
         """Register a tile inference result for stitching."""

@@ -3,12 +3,14 @@ AgriPulse 2.0 — Agronomy Advisory & Dosage Calculator API
 Provides ICAR/IRRI compliant chemical dosages, knapsack sprayer tank breakdowns, and expert consultations.
 """
 
-from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from ...core.agronomy_engine import calculate_agronomic_dosage, consult_agronomist, AGRONOMIC_KNOWLEDGE
+from ...core.agronomy_engine import (
+    calculate_agronomic_dosage,
+)
 
 router = APIRouter(prefix="/agronomy", tags=["Agronomy & Advisory"])
 
@@ -20,8 +22,8 @@ class DosageRequest(BaseModel):
     area_unit: str = Field("acre", description="Unit of land (acre, hectare, guntha, bigha, cent)")
     sprayer_tank_capacity_l: float = Field(16.0, gt=0.0, description="Capacity of knapsack sprayer in liters")
     growth_stage: str = Field("Tillering", description="Crop growth stage (Seedling, Tillering, Panicle Initiation, Flowering, Maturity)")
-    lat: Optional[float] = Field(None, description="Field latitude for live Open-Meteo weather spray verification")
-    lon: Optional[float] = Field(None, description="Field longitude for live Open-Meteo weather spray verification")
+    lat: float | None = Field(None, description="Field latitude for live Open-Meteo weather spray verification")
+    lon: float | None = Field(None, description="Field longitude for live Open-Meteo weather spray verification")
 
 
 class ConsultRequest(BaseModel):
@@ -31,8 +33,8 @@ class ConsultRequest(BaseModel):
 
 
 class PrescriptionRequest(BaseModel):
-    farmer_name: Optional[str] = "Field Farmer"
-    location_name: Optional[str] = "Agro-Ecological Zone"
+    farmer_name: str | None = "Field Farmer"
+    location_name: str | None = "Agro-Ecological Zone"
     disease_type: str
     severity: float
     confidence: float
@@ -119,11 +121,11 @@ async def generate_prescription(req: PrescriptionRequest):
         growth_stage=req.growth_stage,
     )
 
-    prescription_id = f"ICAR-AGRI-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    prescription_id = f"ICAR-AGRI-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}"
 
     return {
         "prescription_id": prescription_id,
-        "issued_at": datetime.now(timezone.utc).isoformat(),
+        "issued_at": datetime.now(UTC).isoformat(),
         "standards_compliance": "ICAR-IRRI Package of Practices (PoP) 2024-2026",
         "patient_field": {
             "farmer_name": req.farmer_name,

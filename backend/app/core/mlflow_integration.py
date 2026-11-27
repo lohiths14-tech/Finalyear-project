@@ -2,9 +2,9 @@
 MLflow integration — model registry, experiment tracking, and drift detection.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import os
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -17,7 +17,7 @@ class ModelRegistry:
 
     EXPERIMENT_NAME = "agrivision-disease-detection"
 
-    def __init__(self, tracking_uri: Optional[str] = None):
+    def __init__(self, tracking_uri: str | None = None):
         self.tracking_uri = tracking_uri or os.getenv("MLFLOW_TRACKING_URI")
         self._client = None
         if self.tracking_uri:
@@ -37,13 +37,13 @@ class ModelRegistry:
         model_path: str,
         metrics: dict[str, float],
         tags: dict[str, str],
-    ) -> Optional[str]:
+    ) -> str | None:
         """Register a new model version and return the version ID."""
         try:
             import mlflow
 
             with mlflow.start_run(
-                run_name=f"train-{datetime.now(timezone.utc).isoformat()}"
+                run_name=f"train-{datetime.now(UTC).isoformat()}"
             ):
                 for key, val in metrics.items():
                     mlflow.log_metric(key, val)
@@ -106,7 +106,7 @@ class ModelRegistry:
             "psi": round(float(psi), 4),
             "threshold": threshold,
             "action": "trigger_retraining" if drifted else "none",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def detect_data_drift(
@@ -139,7 +139,7 @@ class ModelRegistry:
             "max_feature": max_drift_feature,
             "max_drift": max_drift_value,
             "per_feature": drifts,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def log_prediction(self, disease: str, confidence: float, severity: float):
@@ -160,7 +160,7 @@ class ModelRegistry:
 
     # ── Model Version Info ────────────────────────────────────────────
 
-    def get_latest_stable_version(self) -> Optional[str]:
+    def get_latest_stable_version(self) -> str | None:
         """Return the latest Production model version."""
         try:
             client = self._client

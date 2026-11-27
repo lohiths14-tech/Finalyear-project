@@ -4,7 +4,6 @@ import base64
 import json
 import logging
 import math
-import random
 from typing import Any
 
 import cv2

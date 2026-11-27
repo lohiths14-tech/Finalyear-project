@@ -16,7 +16,6 @@ Components:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import cv2
 import numpy as np
@@ -374,7 +373,7 @@ class ConfidenceHeatmapGenerator:
     @staticmethod
     def generate_severity_heatmap(
         severity_map: np.ndarray,
-        overlay_image: Optional[np.ndarray] = None,
+        overlay_image: np.ndarray | None = None,
         colormap: int = cv2.COLORMAP_JET,
         alpha: float = 0.4,
     ) -> np.ndarray:
@@ -415,7 +414,7 @@ class ConfidenceHeatmapGenerator:
         severity_map: np.ndarray,
         uncertainty_map: np.ndarray,
         confidence_map: np.ndarray,
-        overlay_image: Optional[np.ndarray] = None,
+        overlay_image: np.ndarray | None = None,
         uncertainty_weight: float = 0.3,
     ) -> np.ndarray:
         """

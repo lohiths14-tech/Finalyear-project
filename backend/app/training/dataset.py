@@ -3,7 +3,7 @@ import glob
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 from PIL import Image
 import torch
@@ -32,7 +32,7 @@ class AgriPulseDataset(Dataset):
     """
 
     def __init__(
-        self, data_dirs: Dict[str, str], transform=None, is_train: bool = True
+        self, data_dirs: dict[str, str], transform=None, is_train: bool = True
     ):
         """
         data_dirs: Dictionary mapping dataset source to root directory path.
@@ -55,7 +55,7 @@ class AgriPulseDataset(Dataset):
         self.cleaner = DataCleaner(
             target_classes=DISEASE_CLASSES, allow_pseudo_severity=False
         )
-        self.samples: List[Dict[str, Any]] = []
+        self.samples: list[dict[str, Any]] = []
 
         self.report = {
             "sources": {},
@@ -167,7 +167,7 @@ class AgriPulseDataset(Dataset):
 
     def _parse_standard_folder_structure(
         self, root_dir: str, dataset_name: str, context: str
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """
         Parses a dataset where images are stored in folders named after their class.
         Returns a list of uncleaned dicts.
@@ -192,7 +192,7 @@ class AgriPulseDataset(Dataset):
     def __len__(self) -> int:
         return len(self.samples)
 
-    def __getitem__(self, idx: int) -> Dict[str, Any]:
+    def __getitem__(self, idx: int) -> dict[str, Any]:
         sample = self.samples[idx]
 
         # Load image

@@ -2,13 +2,12 @@
 JWT Authentication — password hashing, token creation, and route dependency.
 """
 
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import UTC, datetime, timedelta
 
+import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
-import bcrypt
 from pydantic import BaseModel
 
 from ..core.config import settings
@@ -20,8 +19,8 @@ security = HTTPBearer(auto_error=False)
 
 
 class TokenData(BaseModel):
-    sub: Optional[str] = None
-    exp: Optional[datetime] = None
+    sub: str | None = None
+    exp: datetime | None = None
 
 
 class Token(BaseModel):
@@ -54,10 +53,10 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(
-    data: dict, expires_delta: Optional[timedelta] = None
+    data: dict, expires_delta: timedelta | None = None
 ) -> str:
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + (
+    expire = datetime.now(UTC) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update(exp=expire)
