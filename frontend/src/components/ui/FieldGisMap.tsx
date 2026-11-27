@@ -667,10 +667,10 @@ export const FieldGisMap: React.FC<FieldGisMapProps> = ({
           <div className="gis-control-header-row">
             <div className="gis-control-title">
               <Layers size={14} color="var(--primary)" />
-              <span>Illustrative extent &amp; overlay</span>
+              <span>Illustrative dimensions &amp; overlay</span>
             </div>
-            <div className="gis-area-badge">
-              {areaStats.hectares.toFixed(2)} ha · {areaStats.acres.toFixed(2)} acres
+            <div className="gis-area-badge" aria-label={`Illustrative area estimate: ${areaStats.hectares.toFixed(2)} hectares, ${areaStats.acres.toFixed(2)} acres`}>
+              Illustrative area estimate: {areaStats.hectares.toFixed(2)} ha · {areaStats.acres.toFixed(2)} acres
             </div>
           </div>
 

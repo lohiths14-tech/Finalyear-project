@@ -111,6 +111,8 @@ describe('FieldGisMap location provenance', () => {
     render(<FieldGisMap imageUrl={null} gridData={[]} />);
     expect(screen.getByText(/No field location was provided/i)).toBeInTheDocument();
     expect(screen.getByText(/Location not set · no field boundary available/i)).toBeInTheDocument();
+    expect(screen.getByText(/Illustrative area estimate: .* ha · .* acres/i)).toBeInTheDocument();
+    expect(screen.getByText(/Illustrative dimensions & overlay/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Google Maps coordinates or link/i)).toHaveValue('');
     expect(screen.getByRole('button', { name: /Copy current coordinates/i })).toBeDisabled();
   });
