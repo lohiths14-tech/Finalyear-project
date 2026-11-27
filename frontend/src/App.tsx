@@ -125,12 +125,17 @@ let toastIdCounter = 0;
 
 const isValidTab = (tab: string | null): tab is string => Boolean(tab && Object.prototype.hasOwnProperty.call(TAB_TITLES, tab));
 
+export function getInitialRoute(search: string = window.location.search) {
+  const tab = new URLSearchParams(search).get('tab');
+  return isValidTab(tab)
+    ? { viewMode: 'app' as const, activeTab: tab }
+    : { viewMode: 'landing' as const, activeTab: 'field' };
+}
+
 function App() {
-  const [viewMode, setViewMode] = useState<'landing' | 'app'>('landing');
-  const [activeTab, setActiveTab] = useState(() => {
-    const tab = new URLSearchParams(window.location.search).get('tab');
-    return isValidTab(tab) ? tab : 'field';
-  });
+  const [initialRoute] = useState(() => getInitialRoute());
+  const [viewMode, setViewMode] = useState<'landing' | 'app'>(initialRoute.viewMode);
+  const [activeTab, setActiveTab] = useState(initialRoute.activeTab);
   const [toasts, setToasts] = useState<{ id: number; message: string; type: 'success' | 'error' | 'warning' | 'info' }[]>([]);
   const [backendOnline, setBackendOnline] = useState<boolean | null>(null);
   const [lastScan, setLastScan] = useState<FieldResult | null>(null);
