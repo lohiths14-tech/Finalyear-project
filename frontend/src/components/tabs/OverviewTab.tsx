@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, MotionConfig } from 'framer-motion';
 import NumberFlow from '@number-flow/react';
 import {
-  ShieldCheck, AlertTriangle, Activity, Award, ZoomIn, X, Sparkles
+  ShieldCheck, AlertTriangle, Activity, Award, ZoomIn, X, Sparkles, ArrowRight
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer,
@@ -39,6 +39,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 
 interface OverviewTabProps {
   lastScan?: FieldResult | null;
+  onNavigate?: (tab: 'field' | 'leaf' | 'spectral') => void;
 }
 
 interface ModelMetrics {
@@ -57,7 +58,7 @@ interface ClassesJson {
   has_cm?: boolean;
 }
 
-export default function OverviewTab({ lastScan }: OverviewTabProps) {
+export default function OverviewTab({ lastScan, onNavigate }: OverviewTabProps) {
   const [metrics, setMetrics] = useState<ModelMetrics | null>(null);
   const [metricsStatus, setMetricsStatus] = useState<MetricsStatus>('loading');
   const [isZoomed, setIsZoomed] = useState(false);
@@ -92,7 +93,9 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
 
   const results = lastScan;
   const measuredProgression = results?.temporal_available
-    ? results.progression_data.filter((point) => point.simulated !== true)
+    ? results.progression_data.filter(
+        (point) => point.simulated !== true && typeof point.actual === 'number'
+      )
     : [];
 
   let distributionData: Array<{ name: string; value: number; color: string }> = [];
@@ -146,6 +149,19 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
           <span aria-hidden="true" />{results ? 'Scan loaded' : 'Awaiting scan'}
         </span>
       </header>
+
+      <nav className="overview-quick-actions" aria-label="Open analysis tools">
+        <span className="overview-quick-actions__label">Start here</span>
+        <button type="button" className="btn-icon" onClick={() => onNavigate?.('field')}>
+          <Activity size={15} /> Analyze a field <ArrowRight size={14} />
+        </button>
+        <button type="button" className="btn-icon" onClick={() => onNavigate?.('leaf')}>
+          <ShieldCheck size={15} /> Scan a leaf <ArrowRight size={14} />
+        </button>
+        <button type="button" className="btn-icon" onClick={() => onNavigate?.('spectral')}>
+          <Sparkles size={15} /> View spectral data <ArrowRight size={14} />
+        </button>
+      </nav>
 
       {/* System Status Banner — only shown when no scan */}
       {!results && (
@@ -311,11 +327,10 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
             <div>
               <h3 className="overview-chart-title">Spatio-Temporal Progression</h3>
               <p className="overview-chart-sub">
-                Only backend-marked observed history is shown; single-scan estimates are excluded.
+                Only backend-marked, numeric observations are shown. Model estimates and missing points are excluded.
               </p>
             </div>
             <div className="chart-legend">
-              <span className="legend-item"><span className="dot blue" /> Model estimate</span>
               <span className="legend-item"><span className="dot green" /> Observed</span>
             </div>
           </div>
@@ -329,16 +344,11 @@ export default function OverviewTab({ lastScan }: OverviewTabProps) {
                       <stop offset="5%" stopColor="var(--success)" stopOpacity={0.3} />
                       <stop offset="95%" stopColor="var(--success)" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                    </linearGradient>
                   </defs>
                   <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} />
                   <RechartsTooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="predicted" stroke="var(--primary)" strokeDasharray="5 5" fill="url(#colorPredicted)" connectNulls />
-                  <Area type="monotone" dataKey="actual" stroke="var(--success)" strokeWidth={3} fill="url(#colorActual)" connectNulls />
+                  <Area type="monotone" dataKey="actual" name="Observed" stroke="var(--success)" strokeWidth={3} fill="url(#colorActual)" connectNulls />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

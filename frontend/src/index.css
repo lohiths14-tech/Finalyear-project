@@ -3565,3 +3565,35 @@ a:focus-visible {
   .inference-progress-bar-fill,
   .scenario-card__track > div { transition: none; }
 }
+
+.overview-quick-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -8px 0 18px;
+}
+
+.overview-quick-actions__label {
+  margin-right: 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.overview-quick-actions .btn-icon {
+  min-height: 40px;
+}
+
+@media (max-width: 480px) {
+  .overview-quick-actions__label {
+    flex-basis: 100%;
+  }
+
+  .overview-quick-actions .btn-icon {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+}

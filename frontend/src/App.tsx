@@ -240,7 +240,7 @@ function App() {
 
   const renderTab = () => {
     switch (activeTab) {
-      case 'overview':  return <OverviewTab lastScan={lastScan} />;
+      case 'overview':  return <OverviewTab lastScan={lastScan} onNavigate={handleTabChange} />;
       case 'field':     return <FieldMapTab addToast={addToast} backendOnline={backendOnline} onScanComplete={handleScanComplete} />;
       case 'leaf':      return <LeafScanTab addToast={addToast} backendOnline={backendOnline} onScanComplete={handleLeafScanComplete} lastLeafScan={lastLeafScan} />;
       case 'spectral':  return <SpectralTab lastScan={lastScan} />;
