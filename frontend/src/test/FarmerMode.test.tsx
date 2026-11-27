@@ -141,6 +141,38 @@ describe('FarmerMode Component & Accessibility', () => {
     expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
   });
 
+  it('classifies HTTP 4xx as a definite failure and leaves the scan queued', async () => {
+    const queuedScan = { id: 107, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockRejectedValue({ response: { status: 422 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+
+    await waitFor(() => expect(addToast).toHaveBeenCalledWith('0 synced, 1 failed; failed scans remain queued.', 'warning', 6000));
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+    expect(screen.queryByRole('button', { name: /Explicitly retry uncertain scans/i })).not.toBeInTheDocument();
+  });
+
+  it('classifies HTTP 5xx as uncertain and does not resend on a subsequent sync', async () => {
+    const queuedScan = { id: 108, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
+    localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));
+    vi.mocked(apiClient.post).mockRejectedValue({ response: { status: 503 } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, blob: async () => new Blob(['a'], { type: 'image/jpeg' }) }));
+
+    render(<FarmerMode addToast={addToast} backendOnline={true} />);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(screen.getByRole('button', { name: /Explicitly retry uncertain scans/i })).toBeInTheDocument());
+    expect(screen.getByText(/server may already have processed them/i)).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('agri_offline_queue') || '[]')).toEqual([queuedScan]);
+
+    fireEvent.click(screen.getByText(/Sync Offline Scans/i));
+    await waitFor(() => expect(apiClient.post).toHaveBeenCalledTimes(1));
+  });
+
   it('does not automatically resubmit after a network failure, but permits an explicit retry', async () => {
     const queuedScan = { id: 106, type: 'leaf', name: 'saved.jpg', data: 'data:image/jpeg;base64,YQ==' };
     localStorage.setItem('agri_offline_queue', JSON.stringify([queuedScan]));

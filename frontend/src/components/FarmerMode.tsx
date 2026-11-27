@@ -201,12 +201,15 @@ export default function FarmerMode({ addToast, backendOnline }: FarmerModeProps)
               { headers: { 'Content-Type': 'multipart/form-data' }, timeout: item.type === 'field' ? 300000 : 120000 }
             );
           } catch (error) {
-            const hasServerResponse = Boolean(error && typeof error === 'object' && 'response' in error && (error as { response?: unknown }).response);
-            if (!hasServerResponse) {
+            const status = error && typeof error === 'object' && 'response' in error
+              ? (error as { response?: { status?: unknown } }).response?.status
+              : undefined;
+            const isDefiniteClientRejection = typeof status === 'number' && status >= 400 && status < 500;
+            if (isDefiniteClientRejection) {
+              failed += 1;
+            } else {
               uncertainIds.add(item.id);
               uncertain += 1;
-            } else {
-              failed += 1;
             }
             localStorage.setItem('agri_uncertain_queue', JSON.stringify([...uncertainIds]));
             setUncertainScanIds([...uncertainIds]);
