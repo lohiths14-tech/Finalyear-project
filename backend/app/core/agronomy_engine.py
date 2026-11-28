@@ -522,6 +522,15 @@ def consult_agronomist(disease_type: str, severity: float, question: str) -> str
     """
     Generate evidence-backed ICAR/IRRI agronomic consultation response.
     """
+    if "unknown" in disease_type.lower() or "insufficient" in disease_type.lower():
+        return (
+            "### Diagnosis Withheld — Verification Needed\n\n"
+            "No confirmed paddy pathology was identified from this scan, so disease-specific "
+            "chemical recommendations are withheld.\n\n"
+            "- Capture a clearer, well-lit close-up image of affected leaves.\n"
+            "- Consult your local Krishi Vigyan Kendra (KVK) extension officer before applying treatment."
+        )
+
     q_lower = question.lower()
 
     # Normalize disease key

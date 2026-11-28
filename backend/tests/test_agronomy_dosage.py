@@ -70,6 +70,10 @@ def test_consult_agronomist_queries():
     ans_loss = consult_agronomist("Bacterial Blight", 60.0, "What is the expected yield loss?")
     assert "Yield Risk Profile" in ans_loss
 
+    ans_unknown = consult_agronomist("Unknown", 0.0, "What fungicide should I spray?")
+    assert "Withheld" in ans_unknown
+    assert "No fungicide" not in ans_unknown
+
 
 @pytest.mark.asyncio
 async def test_agronomy_api_endpoints():
@@ -106,3 +110,27 @@ async def test_agronomy_api_endpoints():
         assert "prescription_id" in rx_data
         assert rx_data["patient_field"]["farmer_name"] == "Ramesh Kumar"
         assert "ICAR-IRRI" in rx_data["standards_compliance"]
+
+        # Test /analyze/field/consult without optional land_area or vegetation_coverage (matches FieldMapTab)
+        r_field_consult = await ac.post("/api/v1/analyze/field/consult", json={
+            "question": "How should I manage hotspots?",
+            "disease_type": "Rice Blast (Magnaporthe oryzae)",
+            "average_severity": 45.0,
+            "infection_rate": 32.0,
+            "spread_risk": "High",
+            "clusters": [{"id": 1, "disease": "Rice Blast (Magnaporthe oryzae)", "coverage_pct": 32.0}],
+            "history": [],
+        })
+        assert r_field_consult.status_code == 200
+        fc_data = r_field_consult.json()
+        assert "answer" in fc_data
+        assert "entire 1.0 acre" not in fc_data["answer"]
+
+        # Test /analyze/consult with Unknown diagnosis
+        r_leaf_unknown = await ac.post("/api/v1/analyze/consult", json={
+            "disease_type": "Unknown",
+            "severity": 0.0,
+            "question": "What should I spray?",
+        })
+        assert r_leaf_unknown.status_code == 200
+        assert "Withheld" in r_leaf_unknown.json()["answer"]

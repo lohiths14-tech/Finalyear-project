@@ -183,7 +183,12 @@ class InferenceService:
                 return
 
             opts = ort.SessionOptions()
-            opts.intra_op_num_threads = 2
+            # Keep thread count and arena allocation conservative so field inference
+            # stays well below 512 MB RAM on constrained CPU containers (e.g. Render free tier).
+            opts.intra_op_num_threads = 1
+            opts.inter_op_num_threads = 1
+            opts.enable_cpu_mem_arena = False
+            opts.enable_mem_pattern = False
             opts.graph_optimization_level = (
                 ort.GraphOptimizationLevel.ORT_ENABLE_ALL
             )
@@ -284,25 +289,42 @@ class InferenceService:
         return np.stack(tensors, axis=0).astype(np.float32)
 
     def _predict_vision_batch(
-        self, crops_bgr: list[np.ndarray]
+        self, crops_bgr: list[np.ndarray], batch_size: int = 4
     ) -> tuple[torch.Tensor, list[str]]:
         """
         Runs the real Paddy Doctor MobileNetV2 vision model (ONNX INT8 preferred,
-        PyTorch FP32 fallback) on a batch of BGR crops.
+        PyTorch FP32 fallback) in small chunks so peak RAM remains bounded on CPU.
         Returns (logits_tensor [B, C], class_names).
         """
-        batch_np = self._preprocess_vision_batch(crops_bgr)
+        if not crops_bgr:
+            raise ValueError("crops_bgr must not be empty")
 
         if "vision_student" in self.ort_sessions:
             sess = self.ort_sessions["vision_student"]
             inp_name = sess.get_inputs()[0].name
-            logits_np = sess.run(None, {inp_name: batch_np})[0]
+            logit_chunks: list[np.ndarray] = []
+            for start in range(0, len(crops_bgr), batch_size):
+                batch_np = self._preprocess_vision_batch(
+                    crops_bgr[start: start + batch_size]
+                )
+                logit_chunks.append(sess.run(None, {inp_name: batch_np})[0])
+            logits_np = (
+                logit_chunks[0]
+                if len(logit_chunks) == 1
+                else np.concatenate(logit_chunks, axis=0)
+            )
             return torch.from_numpy(logits_np).to(self.device), PADDY_VISION_CLASSES
 
         if self.vision_student_pt is not None:
+            pt_chunks: list[torch.Tensor] = []
             with torch.no_grad():
-                x_t = torch.from_numpy(batch_np).to(self.device)
-                logits = self.vision_student_pt(x_t)
+                for start in range(0, len(crops_bgr), batch_size):
+                    batch_np = self._preprocess_vision_batch(
+                        crops_bgr[start: start + batch_size]
+                    )
+                    x_t = torch.from_numpy(batch_np).to(self.device)
+                    pt_chunks.append(self.vision_student_pt(x_t))
+            logits = pt_chunks[0] if len(pt_chunks) == 1 else torch.cat(pt_chunks, dim=0)
             return logits, PADDY_VISION_CLASSES
 
         raise RuntimeError("No trained vision_student model available")

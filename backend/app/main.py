@@ -311,7 +311,14 @@ async def prometheus_metrics():
     from fastapi.responses import PlainTextResponse
 
     svc = getattr(app.state, "inference_service", None)
-    loaded_models_count = len(getattr(svc, "loaded_models", set())) if svc else 0
+    loaded_models_count = (
+        len(
+            set(getattr(svc, "loaded_models", set()))
+            | set(getattr(svc, "ort_sessions", {}).keys())
+        )
+        if svc
+        else 0
+    )
 
     lines = [
         "# HELP agripulse_system_info AgriPulse system metadata",

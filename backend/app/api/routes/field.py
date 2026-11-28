@@ -286,14 +286,14 @@ from pydantic import Field as PydanticField
 
 class FieldConsultRequest(BaseModel):
     question: str = PydanticField(..., min_length=2, description="Agronomic question from user")
-    disease_type: str = PydanticField("Rice Blast", description="Identified field disease")
+    disease_type: str = PydanticField(..., description="Identified field disease")
     average_severity: float = PydanticField(..., description="Average severity across field (0-100)")
     infection_rate: float = PydanticField(..., description="Infection rate percentage (0-100)")
-    spread_risk: str = PydanticField("MODERATE", description="Spatial spread risk")
+    spread_risk: str = PydanticField("UNAVAILABLE", description="Spatial spread risk")
     clusters: list[dict[str, Any]] | None = PydanticField(default_factory=list, description="List of detected spatial clusters")
-    vegetation_coverage: float = PydanticField(85.0, description="Vegetation coverage percentage")
-    land_area: float = PydanticField(1.0, description="Land area in specified unit")
-    area_unit: str = PydanticField("acre", description="Unit of land area")
+    vegetation_coverage: float | None = PydanticField(None, description="Vegetation coverage percentage, if available")
+    land_area: float | None = PydanticField(None, description="Land area in specified unit, if provided")
+    area_unit: str | None = PydanticField(None, description="Unit of land area, if provided")
     history: list[dict[str, str]] | None = PydanticField(default_factory=list, description="Conversation history")
 
 

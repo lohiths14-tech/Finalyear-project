@@ -191,15 +191,36 @@ class GenAIAgronomyService:
         infection_rate: float,
         spread_risk: str,
         clusters: list[dict[str, Any]] | None = None,
-        vegetation_coverage: float = 85.0,
-        land_area: float = 1.0,
-        area_unit: str = "acre",
+        vegetation_coverage: float | None = None,
+        land_area: float | None = None,
+        area_unit: str | None = None,
         history: list[dict[str, str]] | None = None,
     ) -> dict[str, Any]:
         """
-        Field-Level Spatial Intelligence Consultation grounded in DINOv2 vision telemetry and ICAR protocols.
+        Field-Level Spatial Intelligence Consultation grounded in vision telemetry and ICAR protocols.
         Provides spatial cluster containment, barrier buffer zones, and spot-spraying strategies.
         """
+        if "unknown" in disease_type.lower() or "insufficient" in disease_type.lower():
+            return {
+                "answer": (
+                    "### Diagnosis Withheld — Verification Needed\n\n"
+                    "The scan could not confidently match a known paddy condition in this image, "
+                    "so disease-specific chemical recommendations are withheld.\n\n"
+                    "- Retake the field photo in clear daylight with visible foliage.\n"
+                    "- Consult your local Krishi Vigyan Kendra (KVK) agronomist before spraying."
+                ),
+                "provider": "icar_spatial_rag_engine (Grounded Local Fallback)",
+                "model": "ICAR Deterministic Expert System",
+                "grounding_source": "DINOv2 Spatial Grid + ICAR-IRRI Field Guidelines",
+                "field_telemetry": {
+                    "infection_rate": infection_rate,
+                    "average_severity": average_severity,
+                    "spread_risk": spread_risk,
+                    "cluster_count": len(clusters) if clusters else 0,
+                },
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+
         disease_key = "Healthy"
         for k in AGRONOMIC_KNOWLEDGE:
             if k.lower() in disease_type.lower():
@@ -218,14 +239,26 @@ class GenAIAgronomyService:
         else:
             clusters_desc = "No isolated clusters; diffuse or clean field distribution."
 
+        veg_line = (
+            f"Vegetation Biomass Coverage: {vegetation_coverage:.1f}%\n"
+            if vegetation_coverage is not None
+            else "Vegetation Biomass Coverage: Not provided\n"
+        )
+        has_area = land_area is not None and area_unit is not None
+        area_line = (
+            f"Plot Area: {land_area} {area_unit}\n"
+            if has_area
+            else "Plot Area: Not provided (use per-acre standard ICAR reference rates)\n"
+        )
+
         field_telemetry = (
-            f"=== REAL FIELD VISION TELEMETRY (DINOv2 + ADAPTIVE GRID) ===\n"
+            f"=== REAL FIELD VISION TELEMETRY ===\n"
             f"Primary Disease Detected: {disease_key} ({info.get('pathogen', 'N/A')})\n"
-            f"Overall Field Infection Rate: {infection_rate:.1f}% of acreage\n"
+            f"Overall Field Infection Rate: {infection_rate:.1f}% of analyzed canopy\n"
             f"Average Canopy Severity: {average_severity:.1f}%\n"
             f"Spatial Spread Risk: {spread_risk}\n"
-            f"Vegetation Biomass Coverage: {vegetation_coverage:.1f}%\n"
-            f"Plot Area: {land_area} {area_unit}\n"
+            f"{veg_line}"
+            f"{area_line}"
             f"Detected Spatial Hotspots:\n{clusters_desc}\n\n"
             f"=== VERIFIED ICAR/IRRI PROTOCOL ===\n"
             f"Recommended Chemical: {chem.get('name', 'N/A')} @ {chem.get('dose_per_liter', 0)} {chem.get('unit', 'g')}/L\n"
@@ -293,26 +326,35 @@ class GenAIAgronomyService:
 
         # Fallback: Deterministic field advisory
         from ..core.agronomy_engine import calculate_agronomic_dosage
+        eff_area = land_area if land_area is not None else 1.0
+        eff_unit = area_unit if area_unit is not None else "acre"
         dosage = calculate_agronomic_dosage(
             disease_type=disease_key,
             severity=average_severity,
-            land_area=land_area,
-            area_unit=area_unit,
+            land_area=eff_area,
+            area_unit=eff_unit,
+        )
+        area_scope = (
+            f"the entire {land_area} {area_unit}"
+            if has_area
+            else "the entire field (per-acre reference rates shown below because plot area was not supplied)"
         )
 
         fallback_md = (
-            f"### 🌾 Precision Field Containment Advisory: {disease_key}\n\n"
+            f"### Precision Field Containment Advisory: {disease_key}\n\n"
             f"- **Field Infection Rate:** {infection_rate:.1f}% (Canopy Severity: {average_severity:.1f}%)\n"
             f"- **Spread Risk Level:** **{spread_risk}**\n\n"
-            f"#### 🎯 Spot-Spraying Containment Protocol\n"
-            f"Rather than broadcast-spraying the entire {land_area} {area_unit}, apply targeted spot spraying "
+            f"#### Spot-Spraying Containment Protocol\n"
+            f"Rather than broadcast-spraying {area_scope}, apply targeted spot spraying "
             f"with a 3-5 meter perimeter buffer around the detected infected hotspots.\n\n"
-            f"#### 🧪 Knapsack Tank & Chemical Formulation\n"
+            f"#### Knapsack Tank & Chemical Formulation"
+            f"{'' if has_area else ' (Per-Acre Reference)'}\n"
             f"- **Chemical:** {dosage['primary_treatment']['name']}\n"
             f"- **Dose per 16L Tank:** {dosage['primary_treatment']['quantity_per_tank']}\n"
-            f"- **Water Dilution Volume:** {dosage['water_volume_liters']} L total ({dosage['total_knapsack_tanks']} tanks)\n"
+            f"- **Water Dilution Volume:** {dosage['water_volume_liters']} L ({dosage['total_knapsack_tanks']} tanks"
+            f"{'' if has_area else ' per acre'})\n"
             f"- **FRAC Code:** {dosage['primary_treatment']['frac_code']} (PHI: {dosage['primary_treatment']['pre_harvest_interval_days']} days)\n\n"
-            f"#### 🛡️ Cultural Sanitation\n"
+            f"#### Cultural Sanitation\n"
             f"{dosage['cultural_preventive_action']}"
         )
 
